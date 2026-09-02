@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Slender: Dead Signal — 2D survival horror (Hard Mode) in pure HTML5, CSS and JavaScript.">
+<meta name="theme-color" content="#0a0a0c">
+<title>SLENDER: DEAD SIGNAL</title>
+
+<!-- ============================================================
+     SLENDER: DEAD SIGNAL  ·  HARD MODE
+     2D Survival Horror — HTML5 + CSS3 + Vanilla JS (zero libs, zero build)
+     Core difference vs. "Signal Lost": the Entity does NOT wander.
+     It pursues the player deterministically on every step, earns
+     double steps as you collect pages, and contact fires a jumpscare
+     with screen-shake. No background timer: the battery only drops
+     when YOU move — the pace is yours, the threat is relentless.
+     Architecture: SPA of 3 views toggled via JS (Home / Game / How to Play)
+     ============================================================ -->
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<!-- ============================================================
+     NAVIGATION BAR — the SAME for all 3 views
+     ============================================================ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="rec" aria-hidden="true">●</span>
+    <span>SLENDER: DEAD SIGNAL</span>
+    <small aria-hidden="true">HARD MODE</small>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Main navigation">
+    <button class="tab" role="tab" id="tab-home" aria-controls="view-home" aria-selected="true"  data-view="home">Home</button>
+    <button class="tab" role="tab" id="tab-game" aria-controls="view-game" aria-selected="false" data-view="game">Game</button>
+    <button class="tab" role="tab" id="tab-help" aria-controls="view-help" aria-selected="false" data-view="help">How to Play</button>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ======================= VIEW 1 — HOME ======================= -->
+  <section class="view" id="view-home" role="tabpanel" aria-labelledby="tab-home" tabindex="-1">
+    <div class="panel hero">
+      <p class="tagline" aria-hidden="true">// SIGNAL LOST — SURVEILLANCE UNIT 04 · HARD MODE //</p>
+      <h1>Slender:<br>Dead&nbsp;Signal</h1>
+      <p class="lore">
+        Eight pages. A dark forest. And this time, the faceless thing doesn't wander —
+        it <strong>hunts</strong>. Every step you take draws it closer, and the more pages
+        you recover, the faster it advances. No timer: the battery only drops when you move.
+        The pace is yours. The threat is relentless.
+      </p>
+      <p>
+        <button class="btn" id="btn-start" type="button">▶ Start Watch</button>
+        <button class="btn btn-ghost" id="btn-to-help" type="button">? How to Play</button>
+      </p>
+      <div class="features">
+        <div class="feature"><strong>🎯 Objective</strong>Recover 8 pages on a 5×5 grid before the static or the battery runs out.</div>
+        <div class="feature"><strong>👤 Hunter</strong>The Entity starts at (5,5) and chases you every step — no rest.</div>
+        <div class="feature"><strong>📈 Escalation</strong>Each page you collect gives it a chance to take a double step.</div>
+        <div class="feature"><strong>♿ Accessible</strong>Every state has an icon + text and a threat bearing. Never color alone.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= VIEW 2 — GAME ======================= -->
+  <section class="view" id="view-game" role="tabpanel" aria-labelledby="tab-game" tabindex="-1" hidden>
+
+    <div class="hud">
+      <div class="meter bar-battery" id="meter-battery">
+        <div class="meter-head"><span>🔋 BATTERY</span><span class="meter-val" id="val-battery">100%</span></div>
+        <div class="bar" role="progressbar" aria-label="Flashlight battery" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" id="pb-battery">
+          <div class="bar-fill" id="fill-battery" style="width:100%"></div>
+        </div>
+      </div>
+      <div class="meter bar-static" id="meter-static">
+        <div class="meter-head"><span>📡 STATIC</span><span class="meter-val" id="val-static">0%</span></div>
+        <div class="bar" role="progressbar" aria-label="Camera static" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pb-static">
+          <div class="bar-fill" id="fill-static" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="meter bar-pages" id="meter-pages">
+        <div class="meter-head"><span>📄 PAGES</span><span class="meter-val" id="val-pages">0 / 8</span></div>
+        <div class="bar" role="progressbar" aria-label="Pages collected" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" id="pb-pages">
+          <div class="bar-fill" id="fill-pages" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="statusline" id="statusline" role="status" aria-live="polite">
+      [STANDBY] ⏻ Press "Start Watch" to begin.
+    </p>
+
+    <div class="playfield">
+      <div class="monitor" id="monitor">
+        <div class="monitor-tag" aria-hidden="true">
+          <span><span class="rec-dot">●</span> REC · NIGHT-VISION</span>
+          <span id="tag-coords">POS 1-1</span>
+        </div>
+
+        <div class="grid" id="grid" role="grid" aria-label="Forest map, 5 by 5 grid"></div>
+
+        <!-- Jumpscare (direct contact) -->
+        <div class="jumpscare" id="jumpscare" hidden aria-hidden="true">
+          <span class="face">👤</span>
+          <span class="scare-text">[CONTACT] ⚠️ IT REACHED YOU</span>
+        </div>
+
+        <!-- Game-over overlay -->
+        <div class="overlay" id="overlay" hidden role="alertdialog" aria-labelledby="overlay-title" aria-describedby="overlay-desc">
+          <p class="big" id="overlay-title">END</p>
+          <p id="overlay-desc">—</p>
+          <p class="stats" id="overlay-stats">—</p>
+          <p>
+            <button class="btn" id="btn-restart" type="button">↻ New Watch</button>
+            <button class="btn btn-ghost" id="btn-overlay-home" type="button">⌂ Home</button>
+          </p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="dpad" role="group" aria-label="Directional controls">
+          <button class="pad pad-up"    type="button" data-dir="up"    aria-label="Move north (W key or up arrow)">▲<small>W</small></button>
+          <button class="pad pad-left"  type="button" data-dir="left"  aria-label="Move west (A key or left arrow)">◀<small>A</small></button>
+          <div class="pad-core" id="radar" role="status" aria-live="polite" aria-label="Entity bearing">NO CONTACT</div>
+          <button class="pad pad-right" type="button" data-dir="right" aria-label="Move east (D key or right arrow)">▶<small>D</small></button>
+          <button class="pad pad-down"  type="button" data-dir="down"  aria-label="Move south (S key or down arrow)">▼<small>S</small></button>
+        </div>
+        <div class="side-actions">
+          <button class="btn" id="btn-game-start" type="button">▶ Start Watch</button>
+          <button class="btn btn-ghost" id="btn-pause" type="button" disabled>⏸ Pause</button>
+          <button class="btn btn-ghost" id="btn-sound" type="button" aria-pressed="false">🔇 Sound: Off</button>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sr-only">Event log</h2>
+    <ul class="log" id="log" aria-live="polite" aria-relevant="additions"></ul>
+  </section>
+
+  <!-- ======================= VIEW 3 — HOW TO PLAY ======================= -->
+  <section class="view" id="view-help" role="tabpanel" aria-labelledby="tab-help" tabindex="-1" hidden>
+    <div class="panel">
+      <h2>■ Objective</h2>
+      <p>You operate a night-vision camera in a forest laid out as a <strong>5×5</strong> grid.
+         Recover the <strong>8 journal pages</strong> before the camera static reaches 100% or the battery runs dry.
+         You start in the corner <strong>(1,1)</strong>; the Entity starts in the opposite corner, <strong>(5,5)</strong>.</p>
+
+      <h2>■ Core Loop</h2>
+      <ol class="steps">
+        <li>Move 1 cell per action with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, the arrow keys or the on-screen D-pad.</li>
+        <li>The flashlight reveals the contents of nearby cells: <strong>Empty</strong>, <strong>🔋 Battery (+20%)</strong> or <strong>📄 Page (+1)</strong>.</li>
+        <li>The battery drops <strong>1% per move you make</strong> — there is no background timer, so the pace is yours.</li>
+        <li>After each of your steps, the Entity takes 1 step <strong>toward you</strong>. As you collect pages, its chance of a <strong>double step</strong> grows.</li>
+        <li>8 pages = <strong>victory</strong>. Static at 100% or battery at 0% = <strong>end of the watch</strong>.</li>
+      </ol>
+
+      <h2>■ HUD — Legend</h2>
+      <table>
+        <caption>Each readout combines an icon, a label and a number</caption>
+        <thead><tr><th scope="col">Readout</th><th scope="col">Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>🔋 Battery %</td><td>Flashlight charge. Drops 1% per move; packs restore +20%. At 0% it's game over.</td></tr>
+          <tr><td>📄 Pages 0/8</td><td>Collection progress. Reach 8 to win.</td></tr>
+          <tr><td>📡 Static %</td><td>Camera interference. Rises near the Entity. At 100% it's game over.</td></tr>
+          <tr><td>▲◀▶▼ Bearing</td><td>In the center of the D-pad: the Entity's direction when it's within camera range.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>■ Controls</h2>
+      <table>
+        <caption>Desktop and Mobile share the same actions</caption>
+        <thead><tr><th scope="col">Action</th><th scope="col">Keyboard</th><th scope="col">Touch / Mouse</th></tr></thead>
+        <tbody>
+          <tr><td>Move North</td><td><kbd>W</kbd> or <kbd>↑</kbd></td><td>D-pad ▲</td></tr>
+          <tr><td>Move South</td><td><kbd>S</kbd> or <kbd>↓</kbd></td><td>D-pad ▼</td></tr>
+          <tr><td>Move West</td><td><kbd>A</kbd> or <kbd>←</kbd></td><td>D-pad ◀</td></tr>
+          <tr><td>Move East</td><td><kbd>D</kbd> or <kbd>→</kbd></td><td>D-pad ▶</td></tr>
+          <tr><td>Pause / Resume</td><td><kbd>P</kbd> or <kbd>Esc</kbd></td><td>⏸ Button</td></tr>
+          <tr><td>Restart</td><td><kbd>R</kbd></td><td>↻ New Watch button</td></tr>
+        </tbody>
+      </table>
+
+      <h2>■ Threat Levels</h2>
+      <table>
+        <caption>The alert text always accompanies the color — never rely on color alone</caption>
+        <thead><tr><th scope="col">Distance</th><th scope="col">Message</th><th scope="col">Effect on static</th></tr></thead>
+        <tbody>
+          <tr><td>3+ cells</td><td>[OK] ✓ Clear signal</td><td>−18% (strong recovery)</td></tr>
+          <tr><td>2 cells</td><td>[WARNING] 〜 Unstable signal to the &lt;bearing&gt;</td><td>−8% (slight relief)</td></tr>
+          <tr><td>1 cell</td><td>[ALERT] ⚠️ It's 1 cell to the &lt;bearing&gt;</td><td>+7%</td></tr>
+          <tr><td>Same cell</td><td>[CONTACT] ⚠️ It reached you — jumpscare</td><td>+35% + screen shake</td></tr>
+        </tbody>
+      </table>
+
+      <h2>■ Survival Strategy</h2>
+      <ul style="padding-left:20px">
+        <li>It always closes the distance, so <strong>never flee in a straight line into a corner</strong> — you'll get trapped. Circle around it and win space back.</li>
+        <li>Distance 2 eases the static a little; only <strong>distance 3+</strong> recovers it strongly. Plan routes that buy a few cells of slack after each scare.</li>
+        <li>Each page makes the Entity faster (double step). The <strong>last pages are the most dangerous</strong> — save the battery packs for them.</li>
+        <li>Hitting a wall costs no battery and doesn't move the Entity — a blocked move doesn't count as a step. The Entity only moves when <strong>you</strong> actually move.</li>
+        <li>The camera shows the threat's bearing in the center of the D-pad. Let it guide your escape.</li>
+      </ul>
+
+      <p><button class="btn" id="btn-help-play" type="button">▶ Got it, start the watch</button></p>
+    </div>
+  </section>
+
+</main>
+
+<footer>SLENDER: DEAD SIGNAL · HARD MODE · HTML5 + CSS + VANILLA JS · NO EXTERNAL LIBRARIES</footer>
+
+<script src="js/game.js"></script>
+</body>
+</html>
