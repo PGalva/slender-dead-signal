@@ -1,0 +1,298 @@
+/* ============================================================
+   1. TOKENS — 5-color palette + monospaced typography
+   ============================================================ */
+:root{
+  --c-black:  #0a0a0c;   /* Night Black    — background */
+  --c-green:  #00ff66;   /* CRT Green      — signal     */
+  --c-slate:  #1a1d1a;   /* Dark Slate     — panels     */
+  --c-red:    #ff3333;   /* Red            — danger     */
+  --c-amber:  #ffcc00;   /* Amber          — flashlight */
+
+  --font-hud:  'Share Tech Mono','Courier New',Courier,monospace;
+  --font-mono: 'Courier New',Courier,monospace;
+
+  /* Dynamic variables written by the JS */
+  --static-level: 0;     /* 0..1 — controls the noise opacity */
+
+  --radius: 4px;
+  --gap: clamp(6px, 1.6vw, 12px);
+}
+
+/* ============================================================
+   2. RESET + BASE (single-theme game, deliberately dark:
+      background and colors painted explicitly, no theme media query)
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+
+body{
+  background:var(--c-black);
+  color:var(--c-green);
+  font-family:var(--font-hud);
+  font-size:16px; line-height:1.5;
+  min-height:100dvh;
+  display:flex; flex-direction:column;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* CRT SCANLINES (decorative) */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9000;
+  background:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.35) 3px, rgba(0,0,0,.35) 4px);
+  mix-blend-mode:multiply;
+}
+
+/* STATIC — real grain (inline SVG feTurbulence), opacity via --static-level */
+body::after{
+  content:""; position:fixed; inset:-25%; pointer-events:none; z-index:8999;
+  opacity:calc(var(--static-level) * .42);
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.9'%20numOctaves='3'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='matrix'%20values='0%200%200%200%201%200%200%200%200%201%200%200%200%200%201%201%200%200%200%200'/%3E%3C/filter%3E%3Crect%20width='160'%20height='160'%20filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px 160px;
+  animation:noiseShift .16s steps(3) infinite;
+  transition:opacity .4s linear;
+}
+@keyframes noiseShift{
+  0%{ background-position:0 0; } 33%{ background-position:-45px 30px; }
+  66%{ background-position:35px -40px; } 100%{ background-position:-20px -25px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  body::after{ animation:none; }
+}
+
+/* ============================================================
+   3. ACCESSIBILITY — focus always visible
+   ============================================================ */
+:focus-visible{ outline:3px solid var(--c-amber); outline-offset:3px; border-radius:var(--radius); }
+button:focus{ outline:3px solid var(--c-amber); outline-offset:3px; }
+button:focus:not(:focus-visible){ outline:none; }
+[tabindex="-1"]:focus, [tabindex="-1"]:focus-visible{ outline:none; }
+
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.skip-link{ position:absolute; left:8px; top:-60px; z-index:9999; background:var(--c-amber); color:var(--c-black); padding:8px 14px; font-weight:bold; text-decoration:none; transition:top .15s ease; }
+.skip-link:focus{ top:8px; }
+
+/* ============================================================
+   4. NAVIGATION BAR (shared by all 3 views)
+   ============================================================ */
+.topbar{
+  position:sticky; top:0; z-index:100;
+  background:var(--c-slate); border-bottom:2px solid var(--c-green);
+  box-shadow:0 0 18px rgba(0,255,102,.18);
+  padding:8px var(--gap);
+  display:flex; flex-wrap:wrap; align-items:center; gap:var(--gap);
+}
+.brand{ display:flex; align-items:baseline; gap:8px; font-size:clamp(.85rem,2.6vw,1.05rem); letter-spacing:1px; font-weight:bold; text-shadow:0 0 8px rgba(0,255,102,.6); white-space:nowrap; }
+.brand .rec{ color:var(--c-red); animation:blink 1.4s steps(1) infinite; }
+@keyframes blink{ 0%,49%{opacity:1} 50%,100%{opacity:.15} }
+.brand small{ color:var(--c-amber); font-size:.62em; letter-spacing:2px; opacity:.85; }
+
+.tabs{ display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
+.tab{
+  font-family:inherit; font-size:clamp(.7rem,2.3vw,.85rem); letter-spacing:1px;
+  background:transparent; color:var(--c-green);
+  border:1px solid rgba(0,255,102,.45); border-radius:var(--radius);
+  padding:8px 12px; min-height:42px; cursor:pointer;
+  transition:background .15s, color .15s, transform .08s;
+}
+.tab:hover{ background:rgba(0,255,102,.12); }
+.tab:active{ transform:translateY(1px); background:rgba(0,255,102,.22); }
+/* Active state: color + ">" marker + bold (never color alone) */
+.tab[aria-selected="true"]{ background:var(--c-green); color:var(--c-black); font-weight:bold; border-color:var(--c-green); }
+.tab[aria-selected="true"]::before{ content:"> "; }
+
+/* ============================================================
+   5. VIEW LAYOUT
+   ============================================================ */
+main{ flex:1; width:100%; max-width:1100px; margin:0 auto; padding:var(--gap); }
+.view[hidden]{ display:none; }
+.view{ animation:fadeIn .25s ease; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
+
+.panel{ background:var(--c-slate); border:1px solid rgba(0,255,102,.35); border-radius:var(--radius); padding:clamp(12px,3vw,22px); margin-bottom:var(--gap); }
+
+h1,h2,h3{ letter-spacing:2px; text-transform:uppercase; line-height:1.25; text-wrap:balance; }
+h1{ font-size:clamp(1.4rem,6vw,2.6rem); text-shadow:0 0 14px rgba(0,255,102,.5); }
+h2{ font-size:clamp(1rem,3.4vw,1.35rem); margin-bottom:10px; color:var(--c-amber); }
+h3{ font-size:clamp(.85rem,2.8vw,1rem); margin:14px 0 6px; }
+p{ margin-bottom:10px; }
+.muted{ opacity:.72; font-size:.86rem; }
+
+/* ---- View: HOME ---- */
+.hero{ text-align:center; padding:clamp(18px,6vw,44px) clamp(12px,4vw,26px); }
+.hero .tagline{ color:var(--c-amber); letter-spacing:3px; font-size:clamp(.68rem,2.6vw,.9rem); margin-bottom:18px; }
+.hero .lore{ max-width:56ch; margin:0 auto 22px; opacity:.9; }
+
+.btn{
+  font-family:inherit; font-size:clamp(.8rem,2.8vw,1rem); letter-spacing:2px; font-weight:bold; text-transform:uppercase;
+  background:var(--c-green); color:var(--c-black);
+  border:2px solid var(--c-green); border-radius:var(--radius);
+  padding:14px 26px; min-height:48px; cursor:pointer;
+  box-shadow:0 0 16px rgba(0,255,102,.35);
+  transition:transform .08s, box-shadow .15s, background .15s;
+}
+.btn:hover{ box-shadow:0 0 26px rgba(0,255,102,.65); }
+.btn:active{ transform:translateY(2px); box-shadow:0 0 8px rgba(0,255,102,.4); }
+.btn-ghost{ background:transparent; color:var(--c-green); box-shadow:none; border-color:rgba(0,255,102,.5); }
+.btn-ghost:hover{ background:rgba(0,255,102,.12); }
+
+.features{ display:grid; gap:var(--gap); grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); margin-top:22px; text-align:left; }
+.feature{ border:1px dashed rgba(0,255,102,.35); border-radius:var(--radius); padding:12px; }
+.feature strong{ display:block; color:var(--c-amber); margin-bottom:4px; letter-spacing:1px; }
+
+/* ============================================================
+   6. HUD
+   ============================================================ */
+.hud{ display:grid; gap:var(--gap); grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-bottom:var(--gap); }
+.meter{ background:var(--c-slate); border:1px solid rgba(0,255,102,.35); border-radius:var(--radius); padding:8px 10px; }
+.meter-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:clamp(.66rem,2.2vw,.78rem); letter-spacing:1px; margin-bottom:6px; font-family:var(--font-hud); }
+.meter-val{ font-weight:bold; font-variant-numeric:tabular-nums; }
+.bar{ height:14px; background:#000; border:1px solid rgba(0,255,102,.3); border-radius:2px; overflow:hidden; position:relative; }
+.bar-fill{ height:100%; width:0%; transition:width .3s linear; }
+/* Distinct stripes per meter: state legible even without color perception */
+.bar-battery .bar-fill{ background:repeating-linear-gradient(90deg,var(--c-amber) 0 6px,rgba(255,204,0,.55) 6px 10px); }
+.bar-static  .bar-fill{ background:repeating-linear-gradient(45deg,var(--c-red) 0 5px,rgba(255,51,51,.4) 5px 10px); }
+.bar-pages   .bar-fill{ background:repeating-linear-gradient(-45deg,var(--c-green) 0 8px,rgba(0,255,102,.5) 8px 12px); }
+.meter.is-critical{ border-color:var(--c-red); border-style:dashed; animation:pulseWarn .7s ease-in-out infinite alternate; }
+@keyframes pulseWarn{ from{ box-shadow:0 0 0 rgba(255,51,51,0) } to{ box-shadow:0 0 18px rgba(255,51,51,.55) } }
+
+/* ============================================================
+   7. MONITOR + 5x5 GRID (+ screen-shake on the container)
+   ============================================================ */
+.monitor{
+  position:relative; background:#000; border:2px solid var(--c-green); border-radius:6px;
+  padding:clamp(8px,2.2vw,14px);
+  box-shadow:inset 0 0 60px rgba(0,255,102,.16), 0 0 24px rgba(0,255,102,.12);
+  margin-bottom:var(--gap);
+}
+/* Screen-shake: applied to the monitor on damage/contact */
+.monitor.is-shaking{ animation:shake .4s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake{
+  10%,90%{ transform:translate(-1px,0) } 20%,80%{ transform:translate(2px,-1px) }
+  30%,50%,70%{ transform:translate(-4px,2px) } 40%,60%{ transform:translate(4px,-2px) }
+}
+.monitor.is-shaking.hard{ animation:shakeHard .5s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shakeHard{
+  10%,90%{ transform:translate(-3px,1px) rotate(-.4deg) } 20%,80%{ transform:translate(5px,-2px) rotate(.5deg) }
+  30%,50%,70%{ transform:translate(-9px,4px) rotate(-.6deg) } 40%,60%{ transform:translate(9px,-4px) rotate(.6deg) }
+}
+
+.monitor-tag{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:clamp(.6rem,2.1vw,.72rem); letter-spacing:1px; color:var(--c-green); opacity:.8; margin-bottom:8px; }
+.monitor-tag .rec-dot{ color:var(--c-red); }
+
+.grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(4px,1.2vw,8px); aspect-ratio:1/1; max-width:520px; margin:0 auto; }
+.cell{
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  border:1px solid rgba(0,255,102,.16); border-radius:3px; background:#050505;
+  font-size:clamp(.9rem,4.2vw,1.5rem); line-height:1; overflow:hidden;
+  transition:background .2s, border-color .2s, box-shadow .2s;
+}
+.cell .cell-label{ font-size:clamp(.34rem,1.5vw,.5rem); letter-spacing:.5px; opacity:.75; text-transform:uppercase; font-family:var(--font-hud); }
+.cell.is-scanned{ background:#0c110c; border-color:rgba(0,255,102,.3); }
+.cell.is-lit{ background:radial-gradient(circle at 50% 45%, rgba(255,204,0,.22), rgba(0,255,102,.07) 70%); border-color:var(--c-amber); box-shadow:inset 0 0 14px rgba(255,204,0,.28); }
+.cell.is-player{ border:2px solid var(--c-green); box-shadow:inset 0 0 20px rgba(0,255,102,.35), 0 0 14px rgba(0,255,102,.4); }
+.cell.is-entity{ border:2px dashed var(--c-red); background:radial-gradient(circle at 50% 45%, rgba(255,51,51,.3), #050505 75%); animation:entityGlitch .28s steps(2) infinite; }
+@keyframes entityGlitch{ 0%{transform:translate(0,0)} 50%{transform:translate(1.5px,-1px)} 100%{transform:translate(-1.5px,1px)} }
+.cell .icon{ filter:drop-shadow(0 0 6px currentColor); }
+.cell.has-page .icon{ color:var(--c-amber); }
+.cell.has-batt .icon{ color:var(--c-green); }
+
+/* ============================================================
+   8. JUMPSCARE — full-screen red flash over the monitor
+   ============================================================ */
+.jumpscare{
+  position:absolute; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 50% 45%, rgba(255,51,51,.5), rgba(10,0,0,.96) 80%);
+  border-radius:6px; pointer-events:none;
+}
+.jumpscare[hidden]{ display:none; }
+.jumpscare .face{ font-size:clamp(5rem,32vw,14rem); line-height:1; filter:grayscale(1) brightness(2.4) contrast(1.6) drop-shadow(0 0 30px var(--c-red)) drop-shadow(0 0 60px var(--c-red)); animation:scarePulse .16s steps(2) 4; }
+.jumpscare .scare-text{ position:absolute; bottom:10%; left:0; right:0; text-align:center; color:var(--c-red); font-weight:bold; letter-spacing:3px; font-size:clamp(.8rem,3.5vw,1.2rem); }
+@keyframes scarePulse{ 0%{transform:scale(1)} 50%{transform:scale(1.12)} 100%{transform:scale(1)} }
+
+/* ============================================================
+   9. STATUS + LOG (text + icon, never color alone)
+   ============================================================ */
+.statusline{
+  border:1px solid rgba(0,255,102,.35); border-left:6px solid var(--c-green); background:var(--c-slate);
+  border-radius:var(--radius); padding:10px 12px; font-size:clamp(.72rem,2.5vw,.88rem); letter-spacing:.5px;
+  min-height:44px; display:flex; align-items:center; margin-bottom:var(--gap);
+}
+.statusline.lv-warn{ border-left-color:var(--c-amber); color:var(--c-amber); }
+.statusline.lv-danger{ border-left-color:var(--c-red); color:var(--c-red); font-weight:bold; }
+.log{ max-height:120px; overflow-y:auto; border:1px solid rgba(0,255,102,.22); border-radius:var(--radius); background:#050505; padding:8px 10px; font-size:clamp(.64rem,2.2vw,.76rem); margin-bottom:var(--gap); }
+.log li{ list-style:none; opacity:.85; padding:1px 0; }
+.log li::before{ content:"» "; opacity:.6; }
+.log li.lv-danger{ color:var(--c-red); opacity:1; }
+.log li.lv-warn{ color:var(--c-amber); opacity:1; }
+
+/* ============================================================
+   10. CONTROLS (touch D-pad + keyboard)
+   ============================================================ */
+.controls{ display:flex; flex-wrap:wrap; gap:var(--gap); align-items:center; justify-content:center; }
+.dpad{ display:grid; grid-template-columns:repeat(3,minmax(56px,74px)); grid-template-rows:repeat(3,minmax(56px,74px)); gap:6px; justify-content:center; }
+.dpad .pad{
+  font-family:inherit; font-size:1.35rem; font-weight:bold;
+  background:var(--c-slate); color:var(--c-green); border:2px solid var(--c-green); border-radius:var(--radius);
+  cursor:pointer; touch-action:manipulation; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  transition:background .1s, transform .06s;
+}
+.dpad .pad small{ font-size:.42rem; letter-spacing:1px; opacity:.75; }
+.dpad .pad:hover{ background:rgba(0,255,102,.15); }
+.dpad .pad:active, .dpad .pad.is-pressed{ background:var(--c-green); color:var(--c-black); transform:scale(.94); }
+.dpad .pad[disabled]{ opacity:.28; cursor:not-allowed; }
+.pad-up{ grid-area:1/2/2/3; } .pad-left{ grid-area:2/1/3/2; }
+.pad-core{ grid-area:2/2/3/3; display:flex; align-items:center; justify-content:center; border:1px dashed rgba(0,255,102,.3); border-radius:var(--radius); font-size:.52rem; font-weight:bold; letter-spacing:.5px; line-height:1.15; text-align:center; padding:3px; opacity:.85; font-family:var(--font-hud); transition:border-color .2s, color .2s; }
+.pad-core.lv-warn{ border-color:var(--c-amber); border-style:solid; color:var(--c-amber); opacity:1; }
+.pad-core.lv-danger{ border-color:var(--c-red); border-style:solid; color:var(--c-red); opacity:1; animation:pulseWarn .6s ease-in-out infinite alternate; }
+.pad-right{ grid-area:2/3/3/4; } .pad-down{ grid-area:3/2/4/3; }
+.side-actions{ display:flex; flex-direction:column; gap:8px; min-width:150px; }
+.side-actions .btn{ padding:11px 14px; font-size:.72rem; }
+
+/* ============================================================
+   11. GAME-OVER OVERLAY
+   ============================================================ */
+.overlay{ position:absolute; inset:0; z-index:50; background:rgba(10,10,12,.94); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; gap:12px; border-radius:6px; }
+.overlay[hidden]{ display:none; }
+.overlay .big{ font-size:clamp(1.3rem,7vw,2.4rem); letter-spacing:4px; font-weight:bold; }
+.overlay.is-lose .big{ color:var(--c-red); text-shadow:0 0 18px rgba(255,51,51,.6); }
+.overlay.is-win .big{ color:var(--c-green); text-shadow:0 0 18px rgba(0,255,102,.6); }
+.overlay .stats{ font-size:.8rem; opacity:.85; }
+
+/* ============================================================
+   12. TABLES + LEGEND (How to Play)
+   ============================================================ */
+table{ width:100%; border-collapse:collapse; font-size:clamp(.7rem,2.4vw,.85rem); margin:10px 0 18px; }
+caption{ text-align:left; color:var(--c-amber); letter-spacing:1px; padding-bottom:6px; font-size:.8rem; font-family:var(--font-hud); }
+th,td{ border:1px solid rgba(0,255,102,.3); padding:8px 10px; text-align:left; vertical-align:top; }
+th{ background:rgba(0,255,102,.1); letter-spacing:1px; text-transform:uppercase; font-size:.72em; font-family:var(--font-hud); }
+.steps{ counter-reset:step; list-style:none; }
+.steps li{ counter-increment:step; padding:8px 0 8px 40px; position:relative; border-bottom:1px dashed rgba(0,255,102,.2); }
+.steps li::before{ content:counter(step); position:absolute; left:0; top:8px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border:1px solid var(--c-amber); color:var(--c-amber); border-radius:50%; font-size:.75rem; font-family:var(--font-hud); }
+.legend{ display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+.legend div{ border:1px solid rgba(0,255,102,.25); border-radius:var(--radius); padding:8px 10px; font-size:.78rem; }
+.legend .k{ font-size:1.1rem; margin-right:6px; }
+kbd{ display:inline-block; background:#000; color:var(--c-amber); border:1px solid var(--c-amber); border-bottom-width:3px; border-radius:3px; padding:1px 7px; font-family:inherit; font-size:.85em; margin:0 2px; }
+footer{ text-align:center; padding:16px var(--gap) 28px; font-size:.66rem; letter-spacing:1px; opacity:.5; }
+
+/* ============================================================
+   13. RESPONSIVENESS
+   ============================================================ */
+@media (max-width:640px){
+  .topbar{ justify-content:center; }
+  .tabs{ margin-left:0; width:100%; justify-content:center; }
+  .tab{ flex:1 1 auto; }
+  .controls{ flex-direction:column; }
+  .side-actions{ width:100%; max-width:320px; flex-direction:row; }
+  .side-actions .btn{ flex:1; }
+  .log{ max-height:88px; }
+}
+@media (min-width:900px){
+  .playfield{ display:grid; grid-template-columns:1.35fr .65fr; gap:var(--gap); align-items:start; }
+  .controls{ flex-direction:column; }
+  .side-actions{ width:100%; }
+}
