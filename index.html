@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="Slender: Dead Signal — 2D survival horror (Hard Mode) in pure HTML5, CSS and JavaScript.">
 <meta name="theme-color" content="#0a0a0c">
-<title>SLENDER: DEAD SIGNAL — PHASE 2</title>
+<title>SLENDER: DEAD SIGNAL — PHASE 3</title>
 
 <!-- ============================================================
      SLENDER: DEAD SIGNAL  ·  HARD MODE
@@ -32,7 +32,7 @@
   <div class="brand">
     <span class="rec" aria-hidden="true">●</span>
     <span>SLENDER: DEAD SIGNAL</span>
-    <small aria-hidden="true">HARD MODE</small>
+    <small aria-hidden="true">NIGHTMARE</small>
   </div>
   <nav class="tabs" role="tablist" aria-label="Main navigation">
     <button class="tab" role="tab" id="tab-home" aria-controls="view-home" aria-selected="true"  data-view="home">Home</button>
@@ -46,21 +46,21 @@
   <!-- ======================= VIEW 1 — HOME ======================= -->
   <section class="view" id="view-home" role="tabpanel" aria-labelledby="tab-home" tabindex="-1">
     <div class="panel hero">
-      <p class="tagline" aria-hidden="true">// SIGNAL LOST — SURVEILLANCE UNIT 04 · HARD MODE · 3 SECTORS //</p>
+      <p class="tagline" aria-hidden="true">// SIGNAL LOST — SURVEILLANCE UNIT 04 · NIGHTMARE MODE · 5 SECTORS //</p>
       <h1>Slender:<br>Dead&nbsp;Signal</h1>
       <p class="lore">
-        Three sectors. One faceless thing that doesn't wander — it <strong>hunts</strong>.
-        Push through the Dark Pine Forest, the Abandoned Shack and the Forgotten Monolith,
-        recovering the journal pages before the static drowns your signal. Each sector runs
-        faster than the last, and the pace between your moves is yours to set. The threat is relentless.
+        Five sectors, each faster and brighter-lit than the last. A faceless thing that doesn't
+        wander — it <strong>hunts</strong>. Sprint from the Moonlit Pine Woods to the Nightmare
+        Monolith, recovering journal pages before your battery burns out or the static drowns your
+        signal. The deeper you go, the more relentless it becomes. Die, and retry the sector instantly.
       </p>
       <p>
         <button class="btn" id="btn-start" type="button">▶ Start Watch</button>
         <button class="btn btn-ghost" id="btn-to-help" type="button">? How to Play</button>
       </p>
       <div class="features">
-        <div class="feature"><strong>🗺️ 3 Sectors</strong>Forest → Shack → Monolith, each a new scene and map, with seamless glitch transitions.</div>
-        <div class="feature"><strong>👤 The Hunter</strong>A faceless Entity that pursues every step and grows more aggressive as you advance.</div>
+        <div class="feature"><strong>🗺️ 5 Sectors</strong>Moonlit Woods → Shack → Concrete Ruins → Industrial Corridor → Nightmare, each a new scene, map and threat level.</div>
+        <div class="feature"><strong>👤 The Hunter</strong>A faceless Entity that pursues every step, appears more often, and turns hyper-active by Sector 5.</div>
         <div class="feature"><strong>↻ Retry Sector</strong>Die and restart only the sector you fell in — instantly. Momentum preserved.</div>
         <div class="feature"><strong>♿ Accessible</strong>Every state has an icon + text and a threat bearing. Never colour alone.</div>
       </div>
@@ -101,7 +101,7 @@
         <div class="scene" id="scene-art" aria-hidden="true"></div>
 
         <div class="monitor-tag" aria-hidden="true">
-          <span><span class="rec-dot">●</span> REC · <span id="tag-mission">M1/3</span> · <span id="tag-env">DARK PINE FOREST</span></span>
+          <span><span class="rec-dot">●</span> REC · <span id="tag-mission">S1/5</span> · <span id="tag-env">MOONLIT PINE WOODS</span></span>
           <span id="tag-coords">POS 1-1</span>
         </div>
 
@@ -117,7 +117,7 @@
         <div class="transition" id="transition" hidden role="status" aria-live="assertive">
           <div class="tr-inner">
             <p class="tr-title" id="tr-title" data-text="[SECTOR COMPLETE]">[SECTOR COMPLETE]</p>
-            <p class="tr-line">— MISSION COMPLETE —</p>
+            <p class="tr-line">— SECTOR CLEARED —</p>
             <p class="tr-next" id="tr-next">PREPARE FOR NEXT SECTOR</p>
             <p class="tr-bar" aria-hidden="true"><span></span></p>
           </div>
@@ -160,32 +160,34 @@
   <section class="view" id="view-help" role="tabpanel" aria-labelledby="tab-help" tabindex="-1" hidden>
     <div class="panel">
       <h2>■ Objective</h2>
-      <p>You operate a night-vision camera across a <strong>5×5</strong> forest grid. The operation runs as
-         <strong>3 back-to-back sectors</strong> — clear each one's pages and the next begins instantly, with no return
-         to the menu. Recover all pages before the camera static hits 100% or the battery dies. You start in the
-         corner <strong>(1,1)</strong>; the Entity starts in the opposite corner, <strong>(5,5)</strong>, and it does
-         not wander — it <strong>hunts</strong>.</p>
+      <p>You operate a surveillance camera across a <strong>5×5</strong> grid. The operation runs as
+         <strong>5 back-to-back sectors</strong> of rising threat — clear each one's pages and the next begins instantly,
+         with no return to the menu. Recover all pages before the camera static hits 100% or the battery dies. You start
+         in the corner <strong>(1,1)</strong>; the Entity starts in the opposite corner, <strong>(5,5)</strong>, and it
+         does not wander — it <strong>hunts</strong>.</p>
 
-      <h2>■ The 3 Sectors</h2>
+      <h2>■ The 5 Sectors</h2>
       <table>
-        <caption>Each sector is a new environment, a new map, and a faster hunt</caption>
-        <thead><tr><th scope="col">Sector</th><th scope="col">Environment</th><th scope="col">Pages</th><th scope="col">Threat</th></tr></thead>
+        <caption>Each sector is a brighter, distinct environment — and a faster, hungrier hunt</caption>
+        <thead><tr><th scope="col">#</th><th scope="col">Environment</th><th scope="col">Pages</th><th scope="col">Battery / move</th><th scope="col">Threat</th></tr></thead>
         <tbody>
-          <tr><td>1</td><td>The Dark Pine Forest</td><td>2</td><td>Tutorial pace — the Entity often loses your trail.</td></tr>
-          <tr><td>2</td><td>The Abandoned Shack</td><td>3</td><td>Faster hunt, quicker battery drain.</td></tr>
-          <tr><td>3</td><td>The Forgotten Monolith</td><td>3</td><td>Extreme speed, high static, fast drain — relentless.</td></tr>
+          <tr><td>1</td><td>Moonlit Pine Woods</td><td>2</td><td>0.8%</td><td>Warmup — slow, it often loses your trail.</td></tr>
+          <tr><td>2</td><td>The Abandoned Shack</td><td>3</td><td>1.0%</td><td>Escalation — the pulse kicks in.</td></tr>
+          <tr><td>3</td><td>Desolate Concrete Ruins</td><td>3</td><td>1.5%</td><td>Desperation — aggressive, frequent static bursts.</td></tr>
+          <tr><td>4</td><td>Flooded Industrial Corridor</td><td>4</td><td>2.0%</td><td>Frenzy — fast, heavy screen shake.</td></tr>
+          <tr><td>5</td><td>The Nightmare Monolith</td><td>5</td><td>2.5%</td><td>Nightmare — hyper-active, intense distortion.</td></tr>
         </tbody>
       </table>
-      <p>Battery <strong>carries between sectors</strong> (with a <strong>+22% recharge</strong> at each new one), and the
-         Entity grows more aggressive the more sectors you've cleared this run.</p>
+      <p>Battery <strong>carries between sectors</strong> (with a <strong>+40% recharge</strong> at each new one), and the
+         Entity grows more aggressive — and reappears closer — the deeper you get. That's 17 pages across the whole run.</p>
 
       <h2>■ Core Loop</h2>
       <ol class="steps">
         <li>Move 1 cell per action with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, the arrow keys or the on-screen D-pad.</li>
-        <li>The flashlight reveals nearby cells: <strong>Empty</strong>, <strong>🔋 Battery (+20%)</strong> or <strong>📄 Page (+1)</strong>.</li>
+        <li>The flashlight reveals nearby cells: <strong>Empty</strong>, <strong>🔋 Battery (+24%)</strong> or <strong>📄 Page (+1)</strong>.</li>
         <li>The battery drops <strong>per move you make</strong> — there is no background timer, so the pace is yours (but the Entity only rests while you do).</li>
         <li>After each step, the Entity takes a step <strong>toward you</strong>; collecting pages raises its <strong>double-step</strong> chance. Get its page target and the sector clears with a glitch transition into the next.</li>
-        <li>All 3 sectors cleared = <strong>victory</strong>. Static at 100% or battery at 0% = <strong>Signal Lost</strong>.</li>
+        <li>All 5 sectors cleared = <strong>victory</strong>. Static at 100% or battery at 0% = <strong>Signal Lost</strong>.</li>
       </ol>
 
       <h2>■ Die? Retry the Sector</h2>
@@ -198,8 +200,8 @@
         <caption>Each readout combines an icon, a label and a number</caption>
         <thead><tr><th scope="col">Readout</th><th scope="col">Meaning</th></tr></thead>
         <tbody>
-          <tr><td>REC · M1/3</td><td>Current sector and its name, top-left of the monitor.</td></tr>
-          <tr><td>🔋 Battery %</td><td>Flashlight charge. Drops per move; packs restore +20%. At 0% it's game over.</td></tr>
+          <tr><td>REC · S1/5</td><td>Current sector (of 5) and its name, top-left of the monitor.</td></tr>
+          <tr><td>🔋 Battery %</td><td>Flashlight charge. Drops per move; packs restore +24%. At 0% it's game over.</td></tr>
           <tr><td>📄 Pages 0/n</td><td>Pages collected <em>this sector</em> vs. the sector's target.</td></tr>
           <tr><td>📡 Static %</td><td>Camera interference. Rises near the Entity, and drives the heartbeat tempo. At 100% it's game over.</td></tr>
           <tr><td>▲◀▶▼ Bearing</td><td>Centre of the D-pad: the Entity's direction when it's within camera range.</td></tr>
@@ -247,7 +249,7 @@
 
 </main>
 
-<footer>SLENDER: DEAD SIGNAL · HARD MODE · HTML5 + CSS + VANILLA JS · NO EXTERNAL LIBRARIES</footer>
+<footer>SLENDER: DEAD SIGNAL · PHASE 3 · 5 SECTORS · HTML5 + CSS + VANILLA JS · NO EXTERNAL LIBRARIES</footer>
 
 <script src="js/game.js"></script>
 </body>

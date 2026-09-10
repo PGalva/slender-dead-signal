@@ -17,39 +17,56 @@
   --radius: 4px;
   --gap: clamp(6px, 1.6vw, 12px);
 
-  /* Environment ambient tokens (defaults = neutral forest-ish).
-     changeEnvironment() sets data-env on <html>; the blocks below
-     retune the monitor frame glow, vignette and color wash per scene. */
+  /* Environment ambient tokens. Phase 3 uses BRIGHTER, higher-contrast washes
+     and lighter vignettes so the scenes read clearly. changeEnvironment(stage)
+     sets data-env on <html>; the blocks below retune the monitor frame glow,
+     vignette and colour wash per sector. */
   --env-frame:  rgba(0,255,102,.7);
   --env-inner:  rgba(0,255,102,.14);
   --env-outer:  rgba(0,255,102,.12);
-  --env-vignette: rgba(0,0,0,.6);
-  --env-wash:   linear-gradient(rgba(0,20,10,.25), rgba(0,8,6,.5));
+  --env-vignette: rgba(0,0,0,.5);
+  --env-wash:   linear-gradient(rgba(0,20,10,.14), rgba(0,8,6,.34));
 }
 
-/* Mission 1 — The Dark Pine Forest: cold blue-green, heavy mist */
-:root[data-env="forest"]{
-  --env-frame: rgba(0,255,140,.65);
-  --env-inner: rgba(0,120,90,.20);
-  --env-outer: rgba(0,180,120,.14);
-  --env-vignette: rgba(1,10,8,.70);
-  --env-wash: linear-gradient(rgba(6,26,20,.30), rgba(2,10,10,.55));
+/* Sector 1 — Moonlit Pine Woods: bright silver-blue moonlight */
+:root[data-env="moonwoods"]{
+  --env-frame: rgba(150,200,255,.75);
+  --env-inner: rgba(120,170,220,.18);
+  --env-outer: rgba(150,200,255,.16);
+  --env-vignette: rgba(6,16,26,.52);
+  --env-wash: linear-gradient(rgba(70,110,150,.10), rgba(10,26,40,.34));
 }
-/* Mission 2 — The Abandoned Shack: warm amber-brown, low light */
+/* Sector 2 — Abandoned Shack: warm amber, moonlight through the door */
 :root[data-env="shack"]{
-  --env-frame: rgba(210,150,60,.65);
-  --env-inner: rgba(150,90,30,.22);
-  --env-outer: rgba(120,70,20,.16);
-  --env-vignette: rgba(12,6,2,.76);
-  --env-wash: linear-gradient(rgba(30,18,8,.34), rgba(10,6,3,.6));
+  --env-frame: rgba(230,180,90,.75);
+  --env-inner: rgba(170,110,40,.20);
+  --env-outer: rgba(150,100,40,.16);
+  --env-vignette: rgba(16,9,3,.56);
+  --env-wash: linear-gradient(rgba(40,26,12,.14), rgba(16,10,5,.4));
 }
-/* Mission 3 — The Forgotten Monolith: cold violet-grey, intense static */
-:root[data-env="monolith"]{
-  --env-frame: rgba(150,120,220,.7);
-  --env-inner: rgba(90,70,150,.24);
-  --env-outer: rgba(120,90,200,.18);
-  --env-vignette: rgba(6,4,12,.80);
-  --env-wash: linear-gradient(rgba(18,14,30,.36), rgba(6,4,12,.62));
+/* Sector 3 — Desolate Concrete Ruins: cold hard grey, daylight shaft */
+:root[data-env="concrete"]{
+  --env-frame: rgba(180,195,205,.8);
+  --env-inner: rgba(120,135,145,.20);
+  --env-outer: rgba(150,165,175,.16);
+  --env-vignette: rgba(10,12,14,.56);
+  --env-wash: linear-gradient(rgba(90,100,110,.10), rgba(20,24,28,.42));
+}
+/* Sector 4 — Flooded Industrial Corridor: steel-teal + amber lamp */
+:root[data-env="industrial"]{
+  --env-frame: rgba(255,210,120,.8);
+  --env-inner: rgba(120,150,150,.22);
+  --env-outer: rgba(200,160,80,.18);
+  --env-vignette: rgba(6,12,14,.62);
+  --env-wash: linear-gradient(rgba(40,60,66,.14), rgba(10,18,22,.46));
+}
+/* Sector 5 — The Nightmare Monolith: violent violet-red, high distortion */
+:root[data-env="nightmare"]{
+  --env-frame: rgba(255,70,90,.85);
+  --env-inner: rgba(150,40,70,.28);
+  --env-outer: rgba(200,50,80,.22);
+  --env-vignette: rgba(14,4,10,.66);
+  --env-wash: linear-gradient(rgba(60,14,34,.20), rgba(14,5,16,.5));
 }
 
 /* ============================================================
@@ -326,7 +343,7 @@ p{ margin-bottom:10px; }
 .transition .tr-next{ color:var(--c-green); opacity:.85; letter-spacing:1px; font-size:clamp(.66rem,2.4vw,.85rem); }
 .transition .tr-bar{ height:6px; margin:16px auto 0; max-width:280px; background:#000; border:1px solid rgba(0,255,102,.4); border-radius:3px; overflow:hidden; }
 .transition .tr-bar span{ display:block; height:100%; width:0; background:var(--c-green); }
-.transition.is-on .tr-bar span{ animation:trFill 2s linear forwards; }
+.transition.is-on .tr-bar span{ animation:trFill 1.5s linear forwards; }
 @keyframes trFill{ from{ width:0 } to{ width:100% } }
 /* scanline sweep across the transition */
 .transition.is-on::after{

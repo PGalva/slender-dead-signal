@@ -43,13 +43,14 @@
     // the blink is the escape window that makes Hard Mode fair.
     STALK_LIMIT: 2,            // turns at 1 cell (or less) before the blink
 
-    BATTERY_PICKUP: 20,        // recharge from one pack (%)
-    MISSION_RECHARGE: 22,      // battery topped up at the start of each new sector
+    BATTERY_PICKUP: 24,        // recharge from one pack (%)
+    MISSION_RECHARGE: 40,      // battery refilled at the start of each new sector (heavy drain in late sectors)
 
-    // Section C — run-level aggression: per sector already cleared this run,
-    // the Entity's double-step cap rises and its miss-chance falls.
-    AGGRO_DOUBLE: 0.05,
-    AGGRO_MISS: 0.02
+    // Run-level aggression: per sector already cleared this run, the Entity's
+    // double-step cap rises and its miss-chance falls (kept mild — the per-sector
+    // MISSIONS tuning is the main difficulty ramp).
+    AGGRO_DOUBLE: 0.03,
+    AGGRO_MISS: 0.015
   };
 
   /* ==============================================================
@@ -59,26 +60,44 @@
      map (page/battery placement), and its own difficulty tuning that
      ramps threat, static and battery drain to keep the player in flow.
      ============================================================== */
+  // Phase 3 — 5 escalating sectors. Difficulty is calculated as a smooth ramp
+  // per sector: pages ↑, battery drain ↑, entityMiss ↓ (it appears / stays near
+  // far more often), double-step cap ↑, and static costs ↑ — while distance
+  // recovery ↓. Battery packs and MISSION_RECHARGE keep it just survivable with
+  // the instant [RETRY SECTOR] flow. Each row also drives its scene + heartBpm.
   var MISSIONS = [
-    { // Mission 1 — tutorial pace, low threat
-      env: 'forest', name: 'THE DARK PINE FOREST', pages: 2, batteries: 2,
-      entityMiss: 0.42, doubleStepPerPage: 0.03, doubleStepMax: 0.14,
-      staticSameCell: 32, staticAdjacent: 6, staticNear: -9, staticDecay: 22,
-      batteryDrainMove: 1.0, stalkLimit: 2, heartBpm: 58
+    { // Sector 1 — Warmup: slow Slender, calm
+      env: 'moonwoods', name: 'MOONLIT PINE WOODS', pages: 2, batteries: 3,
+      entityMiss: 0.46, doubleStepPerPage: 0.02, doubleStepMax: 0.10,
+      staticSameCell: 30, staticAdjacent: 6, staticNear: -10, staticDecay: 24,
+      batteryDrainMove: 0.8, stalkLimit: 2, heartBpm: 52, staticBurst: 0
     },
-    { // Mission 2 — medium speed, the entity moves faster, fog tightens
+    { // Sector 2 — Escalation: pulse kicks in
       env: 'shack', name: 'THE ABANDONED SHACK', pages: 3, batteries: 3,
-      entityMiss: 0.24, doubleStepPerPage: 0.05, doubleStepMax: 0.34,
-      staticSameCell: 36, staticAdjacent: 8, staticNear: -7, staticDecay: 17,
-      batteryDrainMove: 1.25, stalkLimit: 2, heartBpm: 78
+      entityMiss: 0.30, doubleStepPerPage: 0.04, doubleStepMax: 0.26,
+      staticSameCell: 34, staticAdjacent: 8, staticNear: -8, staticDecay: 19,
+      batteryDrainMove: 1.0, stalkLimit: 2, heartBpm: 70, staticBurst: 0
     },
-    { // Mission 3 — extreme speed, high static, fast battery drain
-      env: 'monolith', name: 'THE FORGOTTEN MONOLITH', pages: 3, batteries: 3,
-      entityMiss: 0.12, doubleStepPerPage: 0.07, doubleStepMax: 0.55,
-      staticSameCell: 42, staticAdjacent: 10, staticNear: -5, staticDecay: 13,
-      batteryDrainMove: 1.6, stalkLimit: 2, heartBpm: 98
+    { // Sector 3 — Desperation: aggressive, frequent static bursts
+      env: 'concrete', name: 'DESOLATE CONCRETE RUINS', pages: 3, batteries: 3,
+      entityMiss: 0.20, doubleStepPerPage: 0.05, doubleStepMax: 0.38,
+      staticSameCell: 38, staticAdjacent: 9, staticNear: -6, staticDecay: 15,
+      batteryDrainMove: 1.5, stalkLimit: 2, heartBpm: 88, staticBurst: 5
+    },
+    { // Sector 4 — Frenzy: fast Slender, heavy shake
+      env: 'industrial', name: 'FLOODED INDUSTRIAL CORRIDOR', pages: 4, batteries: 4,
+      entityMiss: 0.18, doubleStepPerPage: 0.06, doubleStepMax: 0.44,
+      staticSameCell: 40, staticAdjacent: 9, staticNear: -6, staticDecay: 15,
+      batteryDrainMove: 2.0, stalkLimit: 2, heartBpm: 104, staticBurst: 4
+    },
+    { // Sector 5 — Nightmare: hyper-active, intense distortion (hard but winnable)
+      env: 'nightmare', name: 'THE NIGHTMARE MONOLITH', pages: 5, batteries: 5,
+      entityMiss: 0.15, doubleStepPerPage: 0.07, doubleStepMax: 0.52,
+      staticSameCell: 42, staticAdjacent: 10, staticNear: -6, staticDecay: 14,
+      batteryDrainMove: 2.5, stalkLimit: 2, heartBpm: 122, staticBurst: 3
     }
   ];
+  var TOTAL_SECTORS = MISSIONS.length;
 
   /* Convenience accessor for the currently active mission's tuning. */
   function mission() { return MISSIONS[state ? state.missionIndex : 0]; }
@@ -249,92 +268,145 @@
      and updates the on-screen sector label.
      ============================================================== */
   var SCENES = {
-    // Mission 1 — dense pine forest, drifting mist
-    forest:
+    // Sector 1 — MOONLIT PINE WOODS (bright, high-contrast, misty)
+    moonwoods:
       '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">' +
         '<defs>' +
-          '<linearGradient id="fSky" x1="0" y1="0" x2="0" y2="1">' +
-            '<stop offset="0" stop-color="#0a1f18"/><stop offset="1" stop-color="#02100b"/></linearGradient>' +
+          '<linearGradient id="mwSky" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="#3f6488"/><stop offset="0.6" stop-color="#5b7f9c"/><stop offset="1" stop-color="#8aa6b8"/></linearGradient>' +
+          '<radialGradient id="mwMoon" cx="0.5" cy="0.5" r="0.5">' +
+            '<stop offset="0" stop-color="#ffffff"/><stop offset="0.4" stop-color="#eef6ff"/><stop offset="1" stop-color="#8aa6b8" stop-opacity="0"/></radialGradient>' +
           '<filter id="fBlur"><feGaussianBlur stdDeviation="2.2"/></filter>' +
         '</defs>' +
-        '<rect width="100" height="100" fill="url(#fSky)"/>' +
-        // layered pine silhouettes (back = lighter, front = darker)
-        '<g fill="#06140e">' +
-          '<polygon points="12,80 20,40 28,80"/><polygon points="30,84 40,34 50,84"/>' +
-          '<polygon points="52,82 60,38 68,82"/><polygon points="74,84 84,42 94,84"/></g>' +
-        '<g fill="#030b08">' +
-          '<polygon points="0,92 12,50 24,92"/><polygon points="22,96 36,44 50,96"/>' +
-          '<polygon points="48,94 64,48 80,94"/><polygon points="72,96 88,52 100,96"/></g>' +
-        // trunks
-        '<g stroke="#020806" stroke-width="1.4">' +
-          '<line x1="20" y1="92" x2="20" y2="70"/><line x1="64" y1="94" x2="64" y2="72"/>' +
-          '<line x1="88" y1="96" x2="88" y2="74"/></g>' +
-        // drifting mist bands
-        '<g class="drift" filter="url(#fBlur)" fill="#8fd6c0" opacity="0.10">' +
-          '<ellipse cx="40" cy="70" rx="60" ry="7"/><ellipse cx="65" cy="84" rx="55" ry="9"/>' +
-          '<ellipse cx="30" cy="90" rx="70" ry="8"/></g>' +
+        '<rect width="100" height="100" fill="url(#mwSky)"/>' +
+        '<circle cx="68" cy="26" r="20" fill="url(#mwMoon)"/>' +          // moon glow
+        '<circle cx="68" cy="26" r="8" fill="#f4f9ff"/>' +
+        // dark pine silhouettes against the bright sky = high contrast
+        '<g fill="#0f2230">' +
+          '<polygon points="6,86 16,34 26,86"/><polygon points="26,90 40,28 54,90"/>' +
+          '<polygon points="52,88 64,32 76,88"/><polygon points="74,90 88,36 100,90"/></g>' +
+        '<g fill="#081521">' +
+          '<polygon points="0,98 14,46 28,98"/><polygon points="46,98 62,42 78,98"/></g>' +
+        // bright drifting mist
+        '<g class="drift" filter="url(#fBlur)" fill="#dfeef5" opacity="0.22">' +
+          '<ellipse cx="40" cy="74" rx="62" ry="8"/><ellipse cx="66" cy="86" rx="58" ry="10"/>' +
+          '<ellipse cx="28" cy="92" rx="70" ry="9"/></g>' +
       '</svg>',
 
-    // Mission 2 — abandoned shack interior, dark corridor
+    // Sector 2 — THE ABANDONED SHACK (brighter, moonlight spilling through the door)
     shack:
       '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">' +
         '<defs>' +
           '<linearGradient id="sWall" x1="0" y1="0" x2="0" y2="1">' +
-            '<stop offset="0" stop-color="#20140a"/><stop offset="1" stop-color="#0a0704"/></linearGradient>' +
-          '<radialGradient id="sDoor" cx="0.5" cy="0.5" r="0.6">' +
-            '<stop offset="0" stop-color="#000000"/><stop offset="1" stop-color="#0a0704"/></radialGradient>' +
+            '<stop offset="0" stop-color="#4a3a24"/><stop offset="1" stop-color="#241a10"/></linearGradient>' +
+          '<linearGradient id="sDoor" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="#9fb3bd"/><stop offset="1" stop-color="#3f5560"/></linearGradient>' +
         '</defs>' +
         '<rect width="100" height="100" fill="url(#sWall)"/>' +
-        // vertical rotting planks
-        '<g stroke="#160d06" stroke-width="0.6">' +
+        '<g stroke="#63492c" stroke-width="0.7">' +                       // plank seams (lighter)
           '<line x1="8" y1="0" x2="8" y2="100"/><line x1="20" y1="0" x2="20" y2="100"/>' +
           '<line x1="80" y1="0" x2="80" y2="100"/><line x1="92" y1="0" x2="92" y2="100"/></g>' +
-        '<g fill="#2a1a0d" opacity="0.5">' +
-          '<rect x="8" y="0" width="12" height="100"/><rect x="80" y="0" width="12" height="100"/></g>' +
-        // floorboards
-        '<g stroke="#1a1008" stroke-width="0.5">' +
-          '<line x1="0" y1="82" x2="100" y2="82"/><line x1="0" y1="90" x2="100" y2="90"/></g>' +
-        // dark doorway / corridor
-        '<rect x="38" y="26" width="24" height="56" rx="1" fill="url(#sDoor)"/>' +
-        '<rect x="38" y="26" width="24" height="56" rx="1" fill="none" stroke="#301d0e" stroke-width="1"/>' +
-        // dust motes
-        '<g fill="#d9c290" opacity="0.16">' +
-          '<circle cx="30" cy="40" r="0.5"/><circle cx="70" cy="55" r="0.6"/><circle cx="50" cy="35" r="0.4"/>' +
-          '<circle cx="60" cy="68" r="0.5"/><circle cx="35" cy="62" r="0.4"/></g>' +
+        '<g fill="#5a4326" opacity="0.5"><rect x="8" width="12" height="100"/><rect x="80" width="12" height="100"/></g>' +
+        // bright doorway (moonlight) + light spill on the floor = high contrast
+        '<polygon points="38,82 62,82 74,100 26,100" fill="#8194a0" opacity="0.28"/>' +
+        '<rect x="39" y="24" width="22" height="58" fill="url(#sDoor)"/>' +
+        '<rect x="39" y="24" width="22" height="58" fill="none" stroke="#c9d6dd" stroke-width="0.8"/>' +
+        '<g stroke="#3a2c18" stroke-width="0.6"><line x1="0" y1="82" x2="100" y2="82"/><line x1="0" y1="91" x2="100" y2="91"/></g>' +
+        '<g fill="#f2e6c4" opacity="0.35">' +                             // bright dust motes
+          '<circle cx="30" cy="40" r="0.6"/><circle cx="70" cy="52" r="0.7"/><circle cx="50" cy="34" r="0.5"/>' +
+          '<circle cx="64" cy="66" r="0.6"/><circle cx="34" cy="60" r="0.5"/></g>' +
       '</svg>',
 
-    // Mission 3 — the forgotten monolith, carved runes, static
-    monolith:
+    // Sector 3 — DESOLATE CONCRETE RUINS (grey, cracked, a hard shaft of light)
+    concrete:
       '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">' +
         '<defs>' +
-          '<linearGradient id="mSky" x1="0" y1="0" x2="0" y2="1">' +
-            '<stop offset="0" stop-color="#140f22"/><stop offset="1" stop-color="#05040c"/></linearGradient>' +
-          '<linearGradient id="mStone" x1="0" y1="0" x2="1" y2="1">' +
-            '<stop offset="0" stop-color="#2a2740"/><stop offset="1" stop-color="#100e1c"/></linearGradient>' +
+          '<linearGradient id="cSky" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="#8a929a"/><stop offset="0.5" stop-color="#4c545b"/><stop offset="1" stop-color="#23282c"/></linearGradient>' +
         '</defs>' +
-        '<rect width="100" height="100" fill="url(#mSky)"/>' +
-        // horizon ground
-        '<rect x="0" y="78" width="100" height="22" fill="#0a0812"/>' +
-        '<line x1="0" y1="78" x2="100" y2="78" stroke="#1c1830" stroke-width="0.8"/>' +
-        // the standing stone
-        '<path d="M42,80 L44,26 Q50,18 56,26 L58,80 Z" fill="url(#mStone)" stroke="#3a355a" stroke-width="0.8"/>' +
-        // carved runes (amber glow)
-        '<g stroke="#ffcc00" stroke-width="1" fill="none" opacity="0.85" filter="url(#fBlur2)">' +
-          '<polygon points="50,36 47,42 53,42"/><line x1="50" y1="46" x2="50" y2="56"/>' +
-          '<circle cx="50" cy="62" r="2.4"/><line x1="47" y1="68" x2="53" y2="72"/></g>' +
-        '<defs><filter id="fBlur2"><feGaussianBlur stdDeviation="0.4"/></filter></defs>' +
-        // faint side markers
-        '<g fill="#151228"><rect x="14" y="66" width="6" height="12" rx="1"/><rect x="82" y="64" width="6" height="14" rx="1"/></g>' +
-        // static specks
-        '<g fill="#b8b0d8" opacity="0.14">' +
-          '<circle cx="22" cy="30" r="0.5"/><circle cx="72" cy="24" r="0.5"/><circle cx="60" cy="46" r="0.4"/>' +
-          '<circle cx="30" cy="52" r="0.4"/><circle cx="80" cy="50" r="0.5"/><circle cx="40" cy="20" r="0.4"/></g>' +
+        '<rect width="100" height="100" fill="url(#cSky)"/>' +
+        // broken ceiling with a bright shaft of daylight
+        '<polygon points="40,0 60,0 74,100 26,100" fill="#c6cdd2" opacity="0.16"/>' +
+        '<rect x="0" y="0" width="100" height="16" fill="#20252a"/>' +     // ceiling slab
+        '<polygon points="42,0 58,0 55,16 45,16" fill="#3a4045"/>' +       // hole in ceiling
+        // concrete pillars
+        '<g fill="#2b3136" stroke="#565e66" stroke-width="0.6">' +
+          '<rect x="10" y="16" width="12" height="84"/><rect x="78" y="16" width="12" height="84"/></g>' +
+        '<g fill="#3a4147"><rect x="10" y="16" width="4" height="84"/><rect x="78" y="16" width="4" height="84"/></g>' +
+        // rubble + rebar
+        '<g fill="#31373c"><polygon points="0,92 18,86 30,100 0,100"/><polygon points="70,100 84,88 100,94 100,100"/></g>' +
+        '<g stroke="#6b7178" stroke-width="0.5" opacity="0.8">' +
+          '<line x1="72" y1="100" x2="78" y2="90"/><line x1="76" y1="100" x2="82" y2="92"/>' +
+          '<line x1="18" y1="100" x2="24" y2="92"/></g>' +
+        // cracks
+        '<g stroke="#161a1d" stroke-width="0.6" fill="none"><path d="M50 16 L48 40 L54 58 L50 78"/><path d="M30 30 L36 50"/></g>' +
+      '</svg>',
+
+    // Sector 4 — FLOODED INDUSTRIAL CORRIDOR (perspective, pipes, a flickering lamp)
+    industrial:
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">' +
+        '<defs>' +
+          '<radialGradient id="iLamp" cx="0.5" cy="0.5" r="0.5">' +
+            '<stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient>' +
+        '</defs>' +
+        '<rect width="100" height="100" fill="#2b343a"/>' +
+        // corridor perspective to a vanishing point
+        '<polygon points="0,0 100,0 62,44 38,44" fill="#3c474e"/>' +      // ceiling
+        '<polygon points="0,100 100,100 62,56 38,56" fill="#151b1f"/>' +   // floor (wet, dark)
+        '<polygon points="0,0 0,100 38,56 38,44" fill="#222a2f"/>' +       // left wall
+        '<polygon points="100,0 100,100 62,56 62,44" fill="#222a2f"/>' +   // right wall
+        '<rect x="38" y="44" width="24" height="12" fill="#0c1113"/>' +    // dark far door
+        // perspective seams
+        '<g stroke="#4c575e" stroke-width="0.5">' +
+          '<line x1="0" y1="0" x2="38" y2="44"/><line x1="100" y1="0" x2="62" y2="44"/>' +
+          '<line x1="0" y1="100" x2="38" y2="56"/><line x1="100" y1="100" x2="62" y2="56"/></g>' +
+        // pipes along the walls
+        '<g stroke="#5b676e" stroke-width="1.6" fill="none">' +
+          '<path d="M2 24 L36 47"/><path d="M98 24 L64 47"/><path d="M2 40 L37 52"/><path d="M98 40 L63 52"/></g>' +
+        // wet-floor reflection streak
+        '<polygon points="44,100 56,100 52,58 48,58" fill="#3a4a52" opacity="0.5"/>' +
+        // flickering ceiling lamp (glowing) — the .drift class gives it life
+        '<ellipse cx="50" cy="20" rx="16" ry="7" fill="url(#iLamp)" class="drift"/>' +
+        '<rect x="44" y="17" width="12" height="3" rx="1" fill="#ffe9a8"/>' +
+      '</svg>',
+
+    // Sector 5 — THE NIGHTMARE MONOLITH (violent violet/red, distortion)
+    nightmare:
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">' +
+        '<defs>' +
+          '<radialGradient id="nSky" cx="0.5" cy="0.62" r="0.7">' +
+            '<stop offset="0" stop-color="#7a1230"/><stop offset="0.5" stop-color="#2a0d24"/><stop offset="1" stop-color="#0a0410"/></radialGradient>' +
+          '<linearGradient id="nStone" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0" stop-color="#413a5e"/><stop offset="1" stop-color="#160f22"/></linearGradient>' +
+          '<filter id="nB"><feGaussianBlur stdDeviation="0.5"/></filter>' +
+        '</defs>' +
+        '<rect width="100" height="100" fill="url(#nSky)"/>' +
+        '<rect x="0" y="80" width="100" height="20" fill="#120616"/>' +
+        '<line x1="0" y1="80" x2="100" y2="80" stroke="#4a1030" stroke-width="0.8"/>' +
+        // jagged, distorted monolith
+        '<path d="M41,82 L43,24 L48,14 L52,22 L50,40 L56,30 L58,82 Z" fill="url(#nStone)" stroke="#6a3a6a" stroke-width="0.8"/>' +
+        // burning red runes
+        '<g stroke="#ff3b3b" stroke-width="1.2" fill="none" opacity="0.95" filter="url(#nB)">' +
+          '<polygon points="50,34 46,41 54,41"/><line x1="50" y1="45" x2="50" y2="58"/>' +
+          '<circle cx="50" cy="64" r="2.6"/></g>' +
+        // red static shards radiating from the stone
+        '<g stroke="#ff2f2f" stroke-width="0.9" opacity="0.6">' +
+          '<line x1="50" y1="20" x2="50" y2="4"/><line x1="44" y1="30" x2="30" y2="18"/>' +
+          '<line x1="56" y1="30" x2="70" y2="18"/><line x1="42" y1="52" x2="24" y2="52"/>' +
+          '<line x1="58" y1="52" x2="76" y2="52"/></g>' +
+        // ground crack with red light
+        '<path d="M50 82 L46 92 L52 100" stroke="#ff3b3b" stroke-width="0.8" fill="none" opacity="0.7"/>' +
       '</svg>'
   };
 
   // Human-readable sector names shown in the monitor tag
-  var ENV_NAMES = { forest: 'DARK PINE FOREST', shack: 'ABANDONED SHACK', monolith: 'FORGOTTEN MONOLITH' };
-  var currentEnv = 'forest';
+  var ENV_NAMES = {
+    moonwoods: 'MOONLIT PINE WOODS', shack: 'ABANDONED SHACK', concrete: 'DESOLATE CONCRETE RUINS',
+    industrial: 'FLOODED INDUSTRIAL CORRIDOR', nightmare: 'THE NIGHTMARE MONOLITH'
+  };
+  // stageLevel (1..5) → scene key. changeEnvironment(stageLevel) uses this map.
+  var STAGE_ENV = [null, 'moonwoods', 'shack', 'concrete', 'industrial', 'nightmare'];
+  var currentEnv = 'moonwoods';
 
   /* THE ENTITY — a faceless, elongated silhouette: long limbs, reaching
      tendrils, no features. Drawn once as inline SVG and reused for both the
@@ -372,18 +444,20 @@
     '</svg>';
   var SLENDER_URI = 'data:image/svg+xml,' + encodeURIComponent(SLENDER_SVG);
 
-  /* changeEnvironment(scenarioType)
-     Swaps the scene art, ambient tint/filters (via data-env) and the label.
-     Called on mission transitions in Section B; here it also backs the
-     temporary preview buttons. */
-  function changeEnvironment(scenarioType) {
-    if (!SCENES[scenarioType]) scenarioType = 'forest';
-    currentEnv = scenarioType;
+  /* changeEnvironment(stageLevel)
+     Accepts either a stage number 1..5 (mapped through STAGE_ENV) or a scene
+     key string. Swaps the scene art, retunes the ambient tokens (via data-env
+     on <html> → brighter wash / border glow / UI accent per stage), and updates
+     the on-screen sector label. */
+  function changeEnvironment(stageLevel) {
+    var key = (typeof stageLevel === 'number') ? STAGE_ENV[stageLevel] : stageLevel;
+    if (!SCENES[key]) key = 'moonwoods';
+    currentEnv = key;
     var art = document.getElementById('scene-art');
-    if (art) art.innerHTML = SCENES[scenarioType];
-    document.documentElement.setAttribute('data-env', scenarioType);   // retunes --env-* tokens
+    if (art) art.innerHTML = SCENES[key];
+    document.documentElement.setAttribute('data-env', key);   // retunes --env-* tokens
     var lbl = document.getElementById('tag-env');
-    if (lbl) lbl.textContent = ENV_NAMES[scenarioType] || scenarioType.toUpperCase();
+    if (lbl) lbl.textContent = ENV_NAMES[key] || key.toUpperCase();
   }
   // expose for console/testing and the mission logic
   window.changeEnvironment = changeEnvironment;
@@ -590,7 +664,7 @@
     startMission(0, CONFIG.BATTERY_START, 0);
     showView('game');
     ensureAudio(); beep(660, 90);
-    addLog('[SYSTEM] Operation "Dead Signal" — 3 sectors. Recover every page.');
+    addLog('[SYSTEM] Operation "Dead Signal" — ' + TOTAL_SECTORS + ' sectors. Recover every page.');
   }
 
   /* Section C — [RETRY SECTOR]: instantly restart the CURRENT mission with the
@@ -630,12 +704,12 @@
     el.btnPause.disabled = false; el.btnPause.textContent = '⏸ Pause';
     setPadsEnabled(true);
 
-    changeEnvironment(m.env);                 // swap scene + ambient for this sector
-    updateMissionTag();                       // "MISSION 1/3 · THE DARK PINE FOREST"
+    changeEnvironment(missionIndex + 1);      // stageLevel 1..5 → scene + ambient
+    updateMissionTag();
     renderGrid(); renderHUD();
     setStatus('[SECTOR ' + (missionIndex + 1) + '] 📡 ' + m.name + ' — recover ' + m.pages + ' page' + (m.pages > 1 ? 's' : '') + '.', null);
     setRadar('NO CONTACT', null);
-    addLog('[SECTOR ' + (missionIndex + 1) + '/3] ' + m.name + ' · target ' + m.pages + ' pages.');
+    addLog('[SECTOR ' + (missionIndex + 1) + '/' + TOTAL_SECTORS + '] ' + m.name + ' · target ' + m.pages + ' pages.');
     beep(560 + missionIndex * 120, 90);
   }
 
@@ -653,7 +727,7 @@
       return endRun(true, 'ALL SECTORS CLEARED');
     }
     // Seamless 2s glitch transition, then auto-start the next mission (no reload)
-    addLog('[SECTOR ' + (state.missionIndex + 1) + '/3] ✓ Cleared. Recharge +' + CONFIG.MISSION_RECHARGE + '%.');
+    addLog('[SECTOR ' + (state.missionIndex + 1) + '/' + TOTAL_SECTORS + '] ✓ Cleared. Recharge +' + CONFIG.MISSION_RECHARGE + '%.');
     beep(880, 140); setTimeout(function () { beep(1040, 180); }, 150);
     showTransition(nextIndex, function () {
       startMission(nextIndex, carry, total);
@@ -673,27 +747,27 @@
   /* Updates the mission chip in the monitor tag. */
   function updateMissionTag() {
     var t = document.getElementById('tag-mission');
-    if (t) t.textContent = 'M' + (state.missionIndex + 1) + '/3';
+    if (t) t.textContent = 'S' + (state.missionIndex + 1) + '/' + TOTAL_SECTORS;
   }
 
   /* ==============================================================
-     [8b] SEAMLESS MISSION TRANSITION (2s glitch overlay)
+     [8b] SEAMLESS SECTOR TRANSITION (1.5s glitch overlay)
      ============================================================== */
   function showTransition(nextIndex, done) {
     var next = MISSIONS[nextIndex];
-    var title = '[SECTOR ' + (state.missionIndex + 1) + '/3 COMPLETE]';
+    var title = '[SECTOR ' + (state.missionIndex + 1) + '/' + TOTAL_SECTORS + ' CLEARED]';
     el.trTitle.textContent = title;
     el.trTitle.setAttribute('data-text', title);   // feeds the RGB-split glitch layers
-    el.trNext.textContent = 'PREPARE FOR NEXT SECTOR ▸ ' + next.name;
+    el.trNext.textContent = 'ENTERING HIGHER THREAT ZONE ▸ ' + next.name;
     el.transition.hidden = false;
     el.transition.classList.add('is-on');
-    noiseBurst(0.7); beep(120, 300, 'sawtooth');
-    // hold the glitch for ~2s, then hand off to the next mission
+    noiseBurst(0.8); beep(120, 260, 'sawtooth'); setTimeout(function(){ beep(90, 200, 'sawtooth'); }, 120);
+    // hold the glitch ~1.5s, then hand off to the next sector
     pendingTransition = setTimeout(function () {
       hideTransition();
       pendingTransition = null;
       if (typeof done === 'function') done();
-    }, 2000);
+    }, 1500);
   }
   function hideTransition() {
     el.transition.hidden = true;
@@ -765,6 +839,13 @@
 
     // 9.7 — proximity → static + alert
     resolveProximity(caught);
+
+    // 9.7b — Sector static bursts (mid/late sectors): random interference spikes
+    if (m.staticBurst > 0 && Math.random() * 100 < m.staticBurst) {
+      state.staticLevel = clamp(state.staticLevel + 5, 0, 100);
+      shake(false); noiseBurst(0.55); beep(90, 90, 'sawtooth');
+      addLog('[INTERFERENCE] 〜 Static burst +5%.', 'warn');
+    }
 
     renderGrid(); renderHUD();
 
@@ -857,6 +938,9 @@
     // Count glued turns; on reaching you or passing the limit, it vanishes and returns far away.
     if (dist <= 1) state.stalkTurns++; else state.stalkTurns = 0;
     if (caught || dist === 0 || state.stalkTurns >= m.stalkLimit) {
+      // It always blinks back to a fair distance; late-sector pressure comes from
+      // its much lower miss-chance (it moves toward you nearly every turn), not
+      // from spawning on top of you — that only created an unwinnable static spiral.
       relocateEntity(3);
       state.stalkTurns = 0;
       addLog('[SIGNAL] 📡 It slipped into the shadows... and reappeared in another sector.', 'warn');
@@ -899,7 +983,7 @@
     el.ovDesc.textContent  = (won ? '[VICTORY] ' : '[GAME OVER · SECTOR ' + (state.missionIndex + 1) + '] ') + reason;
     el.ovStats.textContent = won
       ? 'Operation complete · 8/8 pages · Final battery: ' + Math.round(state.battery) + '%'
-      : 'Reached Sector ' + (state.missionIndex + 1) + '/3 · Pages this sector: ' + state.pages + '/' + state.pagesTarget + ' · Battery: ' + Math.round(state.battery) + '%';
+      : 'Reached Sector ' + (state.missionIndex + 1) + '/' + TOTAL_SECTORS + ' · Pages this sector: ' + state.pages + '/' + state.pagesTarget + ' · Battery: ' + Math.round(state.battery) + '%';
 
     setStatus((won ? '[VICTORY] ✓ ' : '[GAME OVER] ✖ ') + reason, won ? null : 'danger');
     addLog((won ? '[VICTORY] ✓ ' : '[GAME OVER] ✖ ') + reason, won ? null : 'danger');
@@ -963,7 +1047,7 @@
   newMission(0, CONFIG.BATTERY_START);   // build a Mission-1 state just for the idle preview
   state.running = false;
   buildGrid();
-  changeEnvironment('forest');   // paint an initial scene so the monitor isn't blank on load
+  changeEnvironment(1);   // paint the Sector 1 scene so the monitor isn't blank on load
   updateMissionTag();
   renderGrid();
   renderHUD();
