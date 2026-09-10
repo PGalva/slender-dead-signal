@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="Slender: Dead Signal — 2D survival horror (Hard Mode) in pure HTML5, CSS and JavaScript.">
 <meta name="theme-color" content="#0a0a0c">
-<title>SLENDER: DEAD SIGNAL</title>
+<title>SLENDER: DEAD SIGNAL — PHASE 2</title>
 
 <!-- ============================================================
      SLENDER: DEAD SIGNAL  ·  HARD MODE
@@ -46,23 +46,23 @@
   <!-- ======================= VIEW 1 — HOME ======================= -->
   <section class="view" id="view-home" role="tabpanel" aria-labelledby="tab-home" tabindex="-1">
     <div class="panel hero">
-      <p class="tagline" aria-hidden="true">// SIGNAL LOST — SURVEILLANCE UNIT 04 · HARD MODE //</p>
+      <p class="tagline" aria-hidden="true">// SIGNAL LOST — SURVEILLANCE UNIT 04 · HARD MODE · 3 SECTORS //</p>
       <h1>Slender:<br>Dead&nbsp;Signal</h1>
       <p class="lore">
-        Eight pages. A dark forest. And this time, the faceless thing doesn't wander —
-        it <strong>hunts</strong>. Every step you take draws it closer, and the more pages
-        you recover, the faster it advances. No timer: the battery only drops when you move.
-        The pace is yours. The threat is relentless.
+        Three sectors. One faceless thing that doesn't wander — it <strong>hunts</strong>.
+        Push through the Dark Pine Forest, the Abandoned Shack and the Forgotten Monolith,
+        recovering the journal pages before the static drowns your signal. Each sector runs
+        faster than the last, and the pace between your moves is yours to set. The threat is relentless.
       </p>
       <p>
         <button class="btn" id="btn-start" type="button">▶ Start Watch</button>
         <button class="btn btn-ghost" id="btn-to-help" type="button">? How to Play</button>
       </p>
       <div class="features">
-        <div class="feature"><strong>🎯 Objective</strong>Recover 8 pages on a 5×5 grid before the static or the battery runs out.</div>
-        <div class="feature"><strong>👤 Hunter</strong>The Entity starts at (5,5) and chases you every step — no rest.</div>
-        <div class="feature"><strong>📈 Escalation</strong>Each page you collect gives it a chance to take a double step.</div>
-        <div class="feature"><strong>♿ Accessible</strong>Every state has an icon + text and a threat bearing. Never color alone.</div>
+        <div class="feature"><strong>🗺️ 3 Sectors</strong>Forest → Shack → Monolith, each a new scene and map, with seamless glitch transitions.</div>
+        <div class="feature"><strong>👤 The Hunter</strong>A faceless Entity that pursues every step and grows more aggressive as you advance.</div>
+        <div class="feature"><strong>↻ Retry Sector</strong>Die and restart only the sector you fell in — instantly. Momentum preserved.</div>
+        <div class="feature"><strong>♿ Accessible</strong>Every state has an icon + text and a threat bearing. Never colour alone.</div>
       </div>
     </div>
   </section>
@@ -84,8 +84,8 @@
         </div>
       </div>
       <div class="meter bar-pages" id="meter-pages">
-        <div class="meter-head"><span>📄 PAGES</span><span class="meter-val" id="val-pages">0 / 8</span></div>
-        <div class="bar" role="progressbar" aria-label="Pages collected" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" id="pb-pages">
+        <div class="meter-head"><span>📄 PAGES</span><span class="meter-val" id="val-pages">0 / 2</span></div>
+        <div class="bar" role="progressbar" aria-label="Pages collected this sector" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" id="pb-pages">
           <div class="bar-fill" id="fill-pages" style="width:0%"></div>
         </div>
       </div>
@@ -97,8 +97,11 @@
 
     <div class="playfield">
       <div class="monitor" id="monitor">
+        <!-- PHASE 2: dynamic scenario art layer (behind the grid) -->
+        <div class="scene" id="scene-art" aria-hidden="true"></div>
+
         <div class="monitor-tag" aria-hidden="true">
-          <span><span class="rec-dot">●</span> REC · NIGHT-VISION</span>
+          <span><span class="rec-dot">●</span> REC · <span id="tag-mission">M1/3</span> · <span id="tag-env">DARK PINE FOREST</span></span>
           <span id="tag-coords">POS 1-1</span>
         </div>
 
@@ -110,13 +113,24 @@
           <span class="scare-text">[CONTACT] ⚠️ IT REACHED YOU</span>
         </div>
 
+        <!-- PHASE 2: seamless mission-transition glitch overlay -->
+        <div class="transition" id="transition" hidden role="status" aria-live="assertive">
+          <div class="tr-inner">
+            <p class="tr-title" id="tr-title" data-text="[SECTOR COMPLETE]">[SECTOR COMPLETE]</p>
+            <p class="tr-line">— MISSION COMPLETE —</p>
+            <p class="tr-next" id="tr-next">PREPARE FOR NEXT SECTOR</p>
+            <p class="tr-bar" aria-hidden="true"><span></span></p>
+          </div>
+        </div>
+
         <!-- Game-over overlay -->
         <div class="overlay" id="overlay" hidden role="alertdialog" aria-labelledby="overlay-title" aria-describedby="overlay-desc">
           <p class="big" id="overlay-title">END</p>
           <p id="overlay-desc">—</p>
           <p class="stats" id="overlay-stats">—</p>
           <p>
-            <button class="btn" id="btn-restart" type="button">↻ New Watch</button>
+            <button class="btn btn-danger" id="btn-retry" type="button">↻ Retry Sector</button>
+            <button class="btn" id="btn-restart" type="button">⟲ Restart Run</button>
             <button class="btn btn-ghost" id="btn-overlay-home" type="button">⌂ Home</button>
           </p>
         </div>
@@ -146,28 +160,49 @@
   <section class="view" id="view-help" role="tabpanel" aria-labelledby="tab-help" tabindex="-1" hidden>
     <div class="panel">
       <h2>■ Objective</h2>
-      <p>You operate a night-vision camera in a forest laid out as a <strong>5×5</strong> grid.
-         Recover the <strong>8 journal pages</strong> before the camera static reaches 100% or the battery runs dry.
-         You start in the corner <strong>(1,1)</strong>; the Entity starts in the opposite corner, <strong>(5,5)</strong>.</p>
+      <p>You operate a night-vision camera across a <strong>5×5</strong> forest grid. The operation runs as
+         <strong>3 back-to-back sectors</strong> — clear each one's pages and the next begins instantly, with no return
+         to the menu. Recover all pages before the camera static hits 100% or the battery dies. You start in the
+         corner <strong>(1,1)</strong>; the Entity starts in the opposite corner, <strong>(5,5)</strong>, and it does
+         not wander — it <strong>hunts</strong>.</p>
+
+      <h2>■ The 3 Sectors</h2>
+      <table>
+        <caption>Each sector is a new environment, a new map, and a faster hunt</caption>
+        <thead><tr><th scope="col">Sector</th><th scope="col">Environment</th><th scope="col">Pages</th><th scope="col">Threat</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>The Dark Pine Forest</td><td>2</td><td>Tutorial pace — the Entity often loses your trail.</td></tr>
+          <tr><td>2</td><td>The Abandoned Shack</td><td>3</td><td>Faster hunt, quicker battery drain.</td></tr>
+          <tr><td>3</td><td>The Forgotten Monolith</td><td>3</td><td>Extreme speed, high static, fast drain — relentless.</td></tr>
+        </tbody>
+      </table>
+      <p>Battery <strong>carries between sectors</strong> (with a <strong>+22% recharge</strong> at each new one), and the
+         Entity grows more aggressive the more sectors you've cleared this run.</p>
 
       <h2>■ Core Loop</h2>
       <ol class="steps">
         <li>Move 1 cell per action with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, the arrow keys or the on-screen D-pad.</li>
-        <li>The flashlight reveals the contents of nearby cells: <strong>Empty</strong>, <strong>🔋 Battery (+20%)</strong> or <strong>📄 Page (+1)</strong>.</li>
-        <li>The battery drops <strong>1% per move you make</strong> — there is no background timer, so the pace is yours.</li>
-        <li>After each of your steps, the Entity takes 1 step <strong>toward you</strong>. As you collect pages, its chance of a <strong>double step</strong> grows.</li>
-        <li>8 pages = <strong>victory</strong>. Static at 100% or battery at 0% = <strong>end of the watch</strong>.</li>
+        <li>The flashlight reveals nearby cells: <strong>Empty</strong>, <strong>🔋 Battery (+20%)</strong> or <strong>📄 Page (+1)</strong>.</li>
+        <li>The battery drops <strong>per move you make</strong> — there is no background timer, so the pace is yours (but the Entity only rests while you do).</li>
+        <li>After each step, the Entity takes a step <strong>toward you</strong>; collecting pages raises its <strong>double-step</strong> chance. Get its page target and the sector clears with a glitch transition into the next.</li>
+        <li>All 3 sectors cleared = <strong>victory</strong>. Static at 100% or battery at 0% = <strong>Signal Lost</strong>.</li>
       </ol>
+
+      <h2>■ Die? Retry the Sector</h2>
+      <p>Death does <strong>not</strong> send you back to Sector 1. The game-over screen offers
+         <strong>↻ Retry Sector</strong> — it restarts <em>only</em> the sector you fell in, instantly, with the battery
+         you entered it with, so you keep your momentum. <strong>⟲ Restart Run</strong> begins the whole operation again.</p>
 
       <h2>■ HUD — Legend</h2>
       <table>
         <caption>Each readout combines an icon, a label and a number</caption>
         <thead><tr><th scope="col">Readout</th><th scope="col">Meaning</th></tr></thead>
         <tbody>
-          <tr><td>🔋 Battery %</td><td>Flashlight charge. Drops 1% per move; packs restore +20%. At 0% it's game over.</td></tr>
-          <tr><td>📄 Pages 0/8</td><td>Collection progress. Reach 8 to win.</td></tr>
-          <tr><td>📡 Static %</td><td>Camera interference. Rises near the Entity. At 100% it's game over.</td></tr>
-          <tr><td>▲◀▶▼ Bearing</td><td>In the center of the D-pad: the Entity's direction when it's within camera range.</td></tr>
+          <tr><td>REC · M1/3</td><td>Current sector and its name, top-left of the monitor.</td></tr>
+          <tr><td>🔋 Battery %</td><td>Flashlight charge. Drops per move; packs restore +20%. At 0% it's game over.</td></tr>
+          <tr><td>📄 Pages 0/n</td><td>Pages collected <em>this sector</em> vs. the sector's target.</td></tr>
+          <tr><td>📡 Static %</td><td>Camera interference. Rises near the Entity, and drives the heartbeat tempo. At 100% it's game over.</td></tr>
+          <tr><td>▲◀▶▼ Bearing</td><td>Centre of the D-pad: the Entity's direction when it's within camera range.</td></tr>
         </tbody>
       </table>
 
@@ -181,32 +216,32 @@
           <tr><td>Move West</td><td><kbd>A</kbd> or <kbd>←</kbd></td><td>D-pad ◀</td></tr>
           <tr><td>Move East</td><td><kbd>D</kbd> or <kbd>→</kbd></td><td>D-pad ▶</td></tr>
           <tr><td>Pause / Resume</td><td><kbd>P</kbd> or <kbd>Esc</kbd></td><td>⏸ Button</td></tr>
-          <tr><td>Restart</td><td><kbd>R</kbd></td><td>↻ New Watch button</td></tr>
+          <tr><td>Retry Sector / Restart</td><td><kbd>R</kbd></td><td>↻ Retry Sector button</td></tr>
         </tbody>
       </table>
 
       <h2>■ Threat Levels</h2>
       <table>
-        <caption>The alert text always accompanies the color — never rely on color alone</caption>
+        <caption>The alert text always accompanies the colour — never rely on colour alone. Exact values ramp per sector; Sector 1 shown.</caption>
         <thead><tr><th scope="col">Distance</th><th scope="col">Message</th><th scope="col">Effect on static</th></tr></thead>
         <tbody>
-          <tr><td>3+ cells</td><td>[OK] ✓ Clear signal</td><td>−18% (strong recovery)</td></tr>
-          <tr><td>2 cells</td><td>[WARNING] 〜 Unstable signal to the &lt;bearing&gt;</td><td>−8% (slight relief)</td></tr>
-          <tr><td>1 cell</td><td>[ALERT] ⚠️ It's 1 cell to the &lt;bearing&gt;</td><td>+7%</td></tr>
-          <tr><td>Same cell</td><td>[CONTACT] ⚠️ It reached you — jumpscare</td><td>+35% + screen shake</td></tr>
+          <tr><td>3+ cells</td><td>[OK] ✓ Clear signal</td><td>strong recovery</td></tr>
+          <tr><td>2 cells</td><td>[WARNING] 〜 Unstable signal to the &lt;bearing&gt;</td><td>slight relief</td></tr>
+          <tr><td>1 cell</td><td>[ALERT] ⚠️ It's 1 cell to the &lt;bearing&gt;</td><td>rises</td></tr>
+          <tr><td>Same cell</td><td>[CONTACT] ⚠️ It reached you — jumpscare</td><td>big spike + screen shake</td></tr>
         </tbody>
       </table>
 
       <h2>■ Survival Strategy</h2>
       <ul style="padding-left:20px">
         <li>It always closes the distance, so <strong>never flee in a straight line into a corner</strong> — you'll get trapped. Circle around it and win space back.</li>
-        <li>Distance 2 eases the static a little; only <strong>distance 3+</strong> recovers it strongly. Plan routes that buy a few cells of slack after each scare.</li>
-        <li>Each page makes the Entity faster (double step). The <strong>last pages are the most dangerous</strong> — save the battery packs for them.</li>
-        <li>Hitting a wall costs no battery and doesn't move the Entity — a blocked move doesn't count as a step. The Entity only moves when <strong>you</strong> actually move.</li>
-        <li>The camera shows the threat's bearing in the center of the D-pad. Let it guide your escape.</li>
+        <li>Only <strong>distance 3+</strong> recovers static strongly (distance 2 just eases it). Plan routes that buy a few cells of slack after each scare.</li>
+        <li>Each page makes the Entity faster, and every cleared sector makes it hungrier. The <strong>final pages of Sector 3 are the most dangerous</strong> — save battery packs for them.</li>
+        <li>Hitting a wall costs no battery and doesn't move the Entity — a blocked move isn't a step.</li>
+        <li>Turn <strong>🔊 Sound</strong> on: the heartbeat races as static climbs — an audio cue for how close it is even off-camera.</li>
       </ul>
 
-      <p><button class="btn" id="btn-help-play" type="button">▶ Got it, start the watch</button></p>
+      <p><button class="btn" id="btn-help-play" type="button">▶ Got it, start the operation</button></p>
     </div>
   </section>
 

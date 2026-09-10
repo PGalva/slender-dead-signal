@@ -1,10 +1,10 @@
-# Slender: Dead Signal
+# Slender: Dead Signal — Phase 2
 
-A 2D survival-horror browser game — **Hard Mode**. You operate a night-vision
-surveillance camera in a dark forest and must recover **8 journal pages** from a
-5×5 grid before the camera static hits 100% or your battery dies. This time the
-faceless Entity does not wander — it **hunts you deterministically**, and every
-page you collect makes it faster.
+A 2D survival-horror browser game. You operate a night-vision surveillance camera
+and push through **three back-to-back sectors** — the Dark Pine Forest, the
+Abandoned Shack, and the Forgotten Monolith — recovering journal pages from a 5×5
+grid while a faceless Entity hunts you. Each sector is a new environment, a new
+map, and a faster hunt, stitched together with seamless glitch transitions.
 
 **Pure HTML5 + CSS3 + Vanilla JavaScript. No frameworks, no libraries, no build step.**
 
@@ -12,72 +12,60 @@ page you collect makes it faster.
 
 Open `index.html` in any modern browser. Nothing to install.
 
-To serve locally:
-
 ```bash
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
+## The three sectors
+
+| Sector | Environment | Pages | Threat |
+|---|---|---|---|
+| 1 | The Dark Pine Forest | 2 | Tutorial pace — the Entity often loses your trail. |
+| 2 | The Abandoned Shack | 3 | Faster hunt, quicker battery drain. |
+| 3 | The Forgotten Monolith | 3 | Extreme speed, high static, fast drain — relentless. |
+
+Clear a sector's page target and the next begins instantly (a 2-second glitch
+transition, no reload). Battery carries between sectors with a +22% recharge at
+each new one, and the Entity grows more aggressive the further you get.
+
 ## Controls
 
 | Action | Keyboard | Touch / Mouse |
 |---|---|---|
-| Move North | `W` or `↑` | D-pad ▲ |
-| Move South | `S` or `↓` | D-pad ▼ |
-| Move West | `A` or `←` | D-pad ◀ |
-| Move East | `D` or `→` | D-pad ▶ |
+| Move North / South / West / East | `W A S D` or arrow keys | On-screen D-pad |
 | Pause / Resume | `P` or `Esc` | ⏸ Button |
-| Restart | `R` | ↻ New Watch button |
+| Retry Sector / Restart | `R` | ↻ Retry Sector button |
 
-## How it plays
+## Key mechanics
 
-1. Move 1 cell per action. The flashlight reveals nearby cells: **Empty**,
-   **Battery (+20%)** or **Page (+1)**.
-2. The battery drops **1% per move** — there is no background timer, so the pace
-   is yours.
-3. After every step you take, the Entity takes 1 step **toward you**. As you
-   collect pages, its chance of a **double step** grows.
-4. Proximity raises **Static**; distance lowers it. The alert always names the
-   Entity's **bearing** (NORTH, SOUTH-EAST, …) so evasion is a decision, not luck.
-5. If it stays on top of you too long — or reaches you — it **blinks** away into
-   the shadows and reappears at distance.
-6. **8 pages = win.** Static at 100% or battery at 0% = game over.
+- **Battery** drops per move (no background timer — the pace is yours); packs restore +20%.
+- **Static** rises near the Entity and drives the heartbeat tempo; at 100% it's game over.
+- Each move, the Entity steps **toward you**; the alert names its **bearing** (NORTH, SOUTH-EAST…) so evasion is a decision, not luck.
+- If it corners you it **blinks** away and reappears at distance.
+- **Retry Sector** — die and you restart only the sector you fell in, instantly, keeping your momentum.
+- Turn **Sound** on for a heartbeat that races as the threat rises.
 
-All balance values live in the `CONFIG` object at the top of `js/game.js`.
-
-## Project structure
+## Structure
 
 ```
 index.html        markup and the 3 views (Home / Game / How to Play)
-css/style.css     design tokens, HUD, grid, D-pad, responsiveness
-js/game.js        state, core loop, Entity AI, rendering, input
+css/style.css     design tokens, dynamic scene theming, HUD, grid, D-pad
+js/game.js        state, missions, Entity AI, environments, audio, input
 ```
 
 ## Accessibility
 
-- No state relies on color alone: every alert carries a text prefix
-  (`[OK]`, `[WARNING]`, `[ALERT]`, `[CONTACT]`) and an icon, and the HUD bars use
-  distinct stripe patterns.
+- No state relies on colour alone: every alert carries a text prefix
+  (`[OK]`, `[WARNING]`, `[ALERT]`, `[CONTACT]`) and an icon; HUD bars use distinct stripes.
 - Visible `:focus-visible` outline on everything focusable.
-- `role="grid"` / `role="gridcell"` with per-cell `aria-label`; `role="status"`
-  with `aria-live` on the status line, radar and log.
-- Skip link and `prefers-reduced-motion` respected.
-
-## Design notes (Hard Mode balancing)
-
-A pure deterministic pursuer on a 5×5 grid is unwinnable on paper — measured at
-**0% wins** — because once it is adjacent it mirrors your moves and the static
-ratchets to death. Two mechanics keep the mode hard but fair: a **blink** (it
-retreats into the shadows after cornering you) and **distance-based recovery**
-(static only falls when you break to 2+ cells away). Tuned by simulation to about
-a **27% win rate** for a competent player, with losses split between static and
-battery — and the escalating double-steps making the final pages the tensest.
+- `role="grid"`/`gridcell` with per-cell `aria-label`; `role="status"` + `aria-live`
+  on the status line, radar and log. Skip link and `prefers-reduced-motion` respected.
 
 ## Deploy to GitHub Pages
 
-In **Settings → Pages**, pick the `main` branch and the `/ (root)` folder.
-The game will be live at `https://<user>.github.io/<repo>/`.
+Settings → Pages → Branch `main`, folder `/ (root)`. Live at
+`https://<user>.github.io/<repo>/`.
 
 ## License
 
