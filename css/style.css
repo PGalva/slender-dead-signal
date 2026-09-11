@@ -272,17 +272,26 @@ p{ margin-bottom:10px; }
   font-size:clamp(.9rem,4.2vw,1.5rem); line-height:1; overflow:hidden;
   transition:background .2s, border-color .2s, box-shadow .2s;
 }
-.cell .cell-label{ font-size:clamp(.34rem,1.5vw,.5rem); letter-spacing:.5px; opacity:.8; text-transform:uppercase; font-family:var(--font-hud); text-shadow:0 0 4px #000; }
-.cell.is-scanned{ background:rgba(6,10,7,.30); border-color:rgba(0,255,102,.22); }
+.cell .cell-label{ position:relative; z-index:3; font-size:clamp(.34rem,1.5vw,.5rem); letter-spacing:.5px; opacity:.8; text-transform:uppercase; font-family:var(--font-hud); text-shadow:0 0 4px #000; image-rendering:pixelated; }
+.cell .icon{ position:relative; z-index:3; }
+/* RADAR SCHEME — explored/empty tile: dirty-yellow border + "CLEAR" */
+.cell.is-scanned{ background:rgba(10,9,4,.34); border-color:rgba(168,145,46,.55); }
+.cell.is-scanned .cell-label{ color:#c9b458; }
 .cell.is-lit{ background:radial-gradient(circle at 50% 45%, rgba(255,204,0,.20), rgba(0,0,0,.10) 72%); border-color:var(--c-amber); box-shadow:inset 0 0 14px rgba(255,204,0,.24); }
+/* player tile: opaque green border + "YOU" */
 .cell.is-player{ border:2px solid var(--c-green); box-shadow:inset 0 0 20px rgba(0,255,102,.35), 0 0 14px rgba(0,255,102,.4); }
-.cell.is-entity{ border:2px solid var(--c-red); background:radial-gradient(circle at 50% 42%, rgba(255,51,51,.4), rgba(3,4,5,.55) 78%); box-shadow:inset 0 0 22px rgba(255,51,51,.5), 0 0 16px rgba(255,51,51,.4); animation:entityGlitch .22s steps(2) infinite; }
-/* the faceless silhouette itself, drawn from the shared SVG */
+.cell.is-player .cell-label{ color:var(--c-green); opacity:1; }
+/* DANGER tile: intense red border, near-black interior the dark figure sinks into */
+.cell.is-entity{ border:2px solid var(--c-red); background:radial-gradient(circle at 50% 58%, rgba(24,2,2,.85), rgba(2,2,3,.94) 72%); box-shadow:inset 0 0 24px rgba(255,20,20,.45), 0 0 16px rgba(255,30,30,.5); animation:entityGlitch .22s steps(2) infinite; }
+.cell.is-entity .cell-label{ color:var(--c-red); font-weight:bold; letter-spacing:1px; opacity:1; text-shadow:0 0 6px var(--c-red), 0 0 2px #000; }
+/* the dark 8-bit silhouette itself, drawn from the shared SVG — kept pitch-dark
+   so it BLENDS into the tile; only a faint red rim betrays it (jumpscare potential) */
 .cell.is-entity::after{
-  content:""; position:absolute; inset:6% 22% 2%; z-index:1;
+  content:""; position:absolute; inset:6% 24% 2%; z-index:1;
   background:var(--slender-img) center bottom / contain no-repeat;
-  filter:drop-shadow(0 0 5px var(--c-red)) contrast(1.2);
-  opacity:.95; animation:entityGlitch .22s steps(2) infinite;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 0 3px rgba(255,20,20,.85)) drop-shadow(0 0 8px rgba(255,10,10,.4));
+  opacity:.97; animation:entityGlitch .22s steps(2) infinite;
 }
 @keyframes entityGlitch{ 0%{transform:translate(0,0)} 50%{transform:translate(1.6px,-1px)} 100%{transform:translate(-1.6px,1px)} }
 .cell .icon{ filter:drop-shadow(0 0 6px currentColor); }
@@ -298,11 +307,12 @@ p{ margin-bottom:10px; }
   border-radius:6px; pointer-events:none;
 }
 .jumpscare[hidden]{ display:none; }
-/* container jitters (RGB-split glitch); the SVG inside lunges/scales */
+/* container jitters (RGB-split glitch); the dark SVG inside lunges/scales,
+   backlit by an intense red aura so the pitch-black figure reads as a silhouette */
 .jumpscare .face{ display:flex; align-items:flex-end; justify-content:center;
-  filter:drop-shadow(4px 0 rgba(255,40,40,.95)) drop-shadow(-4px 0 rgba(0,225,255,.75)) drop-shadow(0 0 30px var(--c-red)) drop-shadow(0 0 70px rgba(255,51,51,.8));
+  filter:drop-shadow(0 0 22px rgba(255,30,30,.98)) drop-shadow(0 0 60px rgba(255,16,16,.9)) drop-shadow(0 0 110px rgba(200,0,0,.75)) drop-shadow(4px 0 rgba(255,40,40,.6)) drop-shadow(-4px 0 rgba(120,0,0,.5));
   animation:scareGlitch .07s steps(2) infinite; }
-.jumpscare .face svg{ height:clamp(230px,66vh,640px); width:auto; animation:scareLunge .16s steps(2) 6; transform-origin:50% 100%; }
+.jumpscare .face svg{ height:clamp(230px,66vh,640px); width:auto; image-rendering:pixelated; animation:scareLunge .16s steps(2) 6; transform-origin:50% 100%; }
 /* the figure lunges toward the viewer */
 @keyframes scareLunge{ 0%{transform:scale(1) translateY(0)} 50%{transform:scale(1.2) translateY(-2%)} 100%{transform:scale(1.06)} }
 /* horizontal RGB-split judder */

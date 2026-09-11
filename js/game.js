@@ -408,39 +408,41 @@
   var STAGE_ENV = [null, 'moonwoods', 'shack', 'concrete', 'industrial', 'nightmare'];
   var currentEnv = 'moonwoods';
 
-  /* THE ENTITY — a faceless, elongated silhouette: long limbs, reaching
-     tendrils, no features. Drawn once as inline SVG and reused for both the
-     grid marker (via a CSS background) and the full-screen jumpscare. */
+  /* THE ENTITY — a VERY DARK 8-bit / pixel-art faceless silhouette.
+     Built entirely from crisp-edged blocks and staircase polygons (no curves)
+     for a deliberate low-res, dread-inducing look. The fill is near-black so it
+     BLENDS into the dark tile / dark jumpscare backdrop — it only reads as a
+     figure once you notice the outline. Chaotic, ASYMMETRICAL sharp tentacles
+     rake outward from behind its back at uneven lengths and angles.
+     Drawn once and reused for both the grid marker (CSS background) and the
+     full-screen jumpscare; the red aura/backlight is added in CSS (drop-shadow),
+     never baked into the art, so the silhouette itself stays pitch-dark. */
   var SLENDER_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 150">' +
-      // STATIC AURA — the red "signal form" from the concept art: jagged shards
-      '<g stroke="#ff2f2f" stroke-width="1.5" fill="none" opacity="0.9" stroke-linecap="round">' +
-        '<path d="M40 24 L40 3"/>' +
-        '<path d="M40 26 L26 7"/><path d="M40 26 L55 5"/>' +
-        '<path d="M30 41 L7 30"/><path d="M50 41 L73 28"/>' +
-        '<path d="M23 54 L3 52"/><path d="M57 54 L77 52"/>' +
-        '<path d="M28 68 L6 76"/><path d="M52 68 L74 74"/>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" shape-rendering="crispEdges">' +
+      // TENTACLES — drawn first so they sit BEHIND the body. Pure black, jagged,
+      // sharp-tipped, and intentionally asymmetric (different sides, lengths, angles).
+      '<g fill="#050506">' +
+        '<polygon points="10,14 12,13 6,9 7,5 2,1 3,7 8,12"/>' +      // long spike, upper-left
+        '<polygon points="9,20 12,20 3,20 0,23 4,22 9,22"/>' +        // low reach, hard left
+        '<polygon points="22,15 20,13 27,8 26,3 31,1 28,8 22,13"/>' + // long spike, upper-right
+        '<polygon points="22,24 20,22 29,26 32,32 27,28 21,25"/>' +   // heavy droop, lower-right
+        '<polygon points="15,13 18,13 17,5 16,0 14,6 14,13"/>' +      // thin blade straight up
+        '<polygon points="12,31 14,30 7,35 3,39 8,34 12,32"/>' +      // stray whip, lower-left
       '</g>' +
-      // BODY — faceless, suited, elongated
-      '<g fill="#f2f2f5">' +
-        '<ellipse cx="40" cy="20" rx="8" ry="11.5"/>' +                     // head, no face
-        '<path d="M31 30 Q40 25 49 30 L47 40 L40 45 L33 40 Z"/>' +          // shoulders / collar
-        '<path d="M34 40 L40 45 L46 40 L50 94 Q40 102 30 94 Z"/>' +         // torso (suit)
-        '<path d="M33 40 L18 120 L25 122 L37 50 Z"/>' +                     // very long left arm
-        '<path d="M47 40 L62 120 L55 122 L43 50 Z"/>' +                     // very long right arm
-        '<path d="M35 92 L31 148 L39 148 L41 94 Z"/>' +                     // left leg
-        '<path d="M45 92 L49 148 L41 148 L39 94 Z"/>' +                     // right leg
+      // BODY — faceless, suited, unnaturally tall. Blocky near-black pixels.
+      '<g fill="#0b0c11">' +
+        '<rect x="13" y="5"  width="6"  height="7"/>' +   // head, no face
+        '<rect x="9"  y="12" width="14" height="3"/>' +   // shoulders (wide)
+        '<rect x="11" y="15" width="10" height="15"/>' +  // torso
+        '<rect x="8"  y="13" width="2"  height="21"/>' +  // long left arm
+        '<rect x="22" y="13" width="2"  height="19"/>' +  // long right arm
+        '<rect x="8"  y="34" width="3"  height="2"/>' +   // left hand
+        '<rect x="21" y="32" width="3"  height="2"/>' +   // right hand
+        '<rect x="12" y="30" width="3"  height="16"/>' +  // left leg
+        '<rect x="17" y="30" width="3"  height="16"/>' +  // right leg
       '</g>' +
-      // SUIT DETAIL — lapels + tie
-      '<g fill="#0b0b0e" opacity="0.6">' +
-        '<path d="M40 45 L37 60 L40 82 L43 60 Z"/>' +                       // tie
-        '<path d="M34 40 L40 46 L38 58 Z"/><path d="M46 40 L40 46 L42 58 Z"/>' +  // lapels
-      '</g>' +
-      // TENDRILS
-      '<g stroke="#f2f2f5" stroke-width="1.3" fill="none" opacity="0.5">' +
-        '<path d="M49 45 Q72 54 63 100"/>' +
-        '<path d="M31 45 Q8 54 17 100"/>' +
-      '</g>' +
+      // SUIT DETAIL — a barely-there dark-crimson tie, only caught in bright light
+      '<rect x="15" y="15" width="2" height="9" fill="#16060a"/>' +
     '</svg>';
   var SLENDER_URI = 'data:image/svg+xml,' + encodeURIComponent(SLENDER_SVG);
 
@@ -516,13 +518,14 @@
           + (cell.type === 'page' && cell.scanned ? ' has-page' : '')
           + (cell.type === 'battery' && cell.scanned ? ' has-batt' : '');
 
+        // RADAR TILE STATES — never colour-alone: each carries a text label + aria.
         var glyph = '░', text = '', aria = 'unscanned';
-        if (isEntity)            { glyph = '';  text = 'ENTITY'; aria = 'ENTITY PRESENT'; }  // silhouette drawn via CSS
+        if (isEntity)            { glyph = '';  text = 'DANGER'; aria = 'DANGER — entity present'; }  // dark silhouette drawn via CSS
         else if (isPlayer)       { glyph = '◉'; text = 'YOU';    aria = 'your position'; }
         else if (cell.scanned) {
           if (cell.type === 'page')        { glyph = '📄'; text = 'PAGE';    aria = 'journal page'; }
           else if (cell.type === 'battery'){ glyph = '🔋'; text = 'BATTERY'; aria = 'battery pack'; }
-          else                             { glyph = '·';  text = 'CLEAR';   aria = 'empty'; }
+          else                             { glyph = '·';  text = 'CLEAR';   aria = 'clear'; }
         }
         icon.textContent = glyph;
         label.textContent = text;
@@ -576,7 +579,10 @@
     setTimeout(function () { el.monitor.classList.remove('is-shaking', 'hard'); }, hard ? 520 : 420);
   }
 
-  /* Jumpscare: full-screen flash for an instant. */
+  /* Jumpscare: the payoff of the DANGER tile. When the Entity shares the
+     player's cell (see resolveProximity → the caught/dist===0 branch, which
+     is what fires this), the pitch-dark pixel silhouette lunges full-screen,
+     backlit by a red aura, with a hard flash + shake + distorted audio. */
   function jumpscare() {
     el.jumpscare.hidden = false;
     el.jumpscare.classList.remove('flash'); void el.jumpscare.offsetWidth; el.jumpscare.classList.add('flash');
@@ -916,7 +922,7 @@
       setStatus('[CONTACT] ⚠️ IT REACHED YOU! Static +' + m.staticSameCell + '%', 'danger');
       addLog('[CONTACT] ⚠️ The Entity reached your cell.', 'danger');
       setRadar('✖ CONTACT', 'danger');
-      jumpscare();
+      jumpscare();   // JUMPSCARE TILE TRIGGER: Entity occupies the player's tile
     } else if (dist === 1) {
       state.staticLevel += m.staticAdjacent;
       setStatus('[ALERT] ⚠️ It is 1 cell to the ' + b + ' ' + arrow + ' — flee the opposite way! Static +' + m.staticAdjacent + '%', 'danger');
